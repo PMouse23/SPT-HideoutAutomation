@@ -2,8 +2,10 @@
 using EFT;
 using EFT.Hideout;
 using EFT.InventoryLogic;
+using EFT.UI;
 using HideoutAutomation.Helpers;
 using SPT.SinglePlayer.Utils.InRaid;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -17,6 +19,7 @@ namespace HideoutAutomation.MonoBehaviours
     {
         private CancellationToken? cancellationToken;
         private CancellationTokenSource? cancellationTokenSource;
+        private bool inDialog = false;
 
         public void Start()
         {
@@ -57,6 +60,7 @@ namespace HideoutAutomation.MonoBehaviours
                             EAreaStatus status = data.Status;
                             EAreaType areaType = data.Template.Type;
                             string name = data.Template.Name;
+                            int nextLevel = data.NextStage?.Level ?? -1;
                             if (Globals.Debug)
                             {
                                 LogHelper.LogInfo($"EAreaType: {areaType}, Status={status}");
@@ -67,10 +71,34 @@ namespace HideoutAutomation.MonoBehaviours
                             {
                                 case EAreaStatus.ReadyToConstruct:
                                 case EAreaStatus.ReadyToUpgrade:
+                                default: //HACK testing only
                                     if (this.isAllowedToConstuctOrUpdate(data, status))
                                     {
-                                        data.UpgradeAction();
-                                        LogHelper.LogInfoWithNotification($"{name} upgrade started.");
+                                        Action upgradeAction = new Action(() =>
+                                        {
+                                            data.UpgradeAction();
+                                            LogHelper.LogInfoWithNotification($"{name} upgrade started.");
+                                        });
+                                        if (Globals.UseDialogWindow)
+                                        {
+                                            if (this.inDialog == false)
+                                            {
+                                                //TODO the text is centered so add spaces to make the requirements line up.
+                                                //TODO add the requrements to the message.
+                                                string description = $"Upgrade {name} to level {nextLevel}. {Environment.NewLine} - Requirement1 {Environment.NewLine} - Requirement2";
+                                                this.showDialogWindow(description, () =>
+                                                {
+                                                    upgradeAction.Invoke();
+                                                }, () =>
+                                                {
+                                                    if (Globals.Debug)
+                                                        LogHelper.LogInfo("upgrade declined");
+                                                });
+                                                this.inDialog = true;
+                                            }
+                                        }
+                                        else
+                                            upgradeAction.Invoke();
                                         yield return new WaitForSeconds(0.5f);
                                     }
                                     break;
@@ -139,6 +167,20 @@ namespace HideoutAutomation.MonoBehaviours
             if (Globals.Debug)
                 LogHelper.LogInfo($"count: {itemCount}, expected: {handoverValue}");
             return itemCount < handoverValue;
+        }
+
+        private void showDialogWindow(string description, Action acceptAction, Action cancelAction)
+        {
+            acceptAction += () =>
+            {
+                this.inDialog = false;
+            };
+            cancelAction += () =>
+            {
+                this.inDialog = false;
+            };
+            var handle = ItemUiContext.Instance.ShowMessageWindow(description, acceptAction, cancelAction);
+            //handle.OnAccept
         }
     }
 }

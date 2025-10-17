@@ -7,4 +7,5 @@ internal static class Globals
     public static bool AutoUpgrade = true;
     public static bool Debug = false;
     public static double ThresholdCurrencyHandover = 1.5;
+    public static bool UseDialogWindow = true;
 }

@@ -16,6 +16,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
         private ConfigEntry<double> thresholdCurrencyHandover;
+        private ConfigEntry<bool> useDialogWindow;
 
         private void Awake()
         {
@@ -59,6 +60,9 @@ namespace HideoutAutomation
             this.thresholdCurrencyHandover = this.Config.Bind("Handover Items", "ThresholdCurrencyHandover", 1.5, "Threshold for the number of times you want to have the currency amount before handing it in.");
             this.thresholdCurrencyHandover.SettingChanged += this.global_SettingChanged;
 
+            this.useDialogWindow = this.Config.Bind("Handover Items", "UseDialogWindow", true, "Always show a dialog window to accept the hideout upgrade.");
+            this.useDialogWindow.SettingChanged += this.global_SettingChanged;
+
             this.setGlobalSettings();
         }
 
@@ -69,6 +73,7 @@ namespace HideoutAutomation
             Globals.AutoInstall = this.autoInstall.Value;
             Globals.AutoUpgrade = this.autoUpgrade.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
+            Globals.UseDialogWindow = this.useDialogWindow.Value;
         }
     }
 }
