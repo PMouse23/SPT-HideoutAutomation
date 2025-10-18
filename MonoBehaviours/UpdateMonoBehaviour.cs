@@ -127,6 +127,7 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
+                            this.removeCurrencyRequirements(data);
                             switch (status)
                             {
                                 case EAreaStatus.ReadyToConstruct:
@@ -300,6 +301,19 @@ namespace HideoutAutomation.MonoBehaviours
             if (Globals.Debug)
                 LogHelper.LogInfo($"count: {itemCount}, expected: {handoverValue}");
             return itemCount < handoverValue;
+        }
+
+        private void removeCurrencyRequirements(AreaData data)
+        {
+            //if (Globals.RemoveCurrencyRequirements)
+            //    return;
+            List<Requirement> requirementsToRemove = [];
+            RelatedRequirements requirements = data.NextStage.Requirements;
+            foreach (Requirement requirement in requirements)
+                if (requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass moneyItem)
+                    requirementsToRemove.Add(requirement);
+            foreach (Requirement requirement in requirementsToRemove)
+                requirements.Data.Remove(requirement);
         }
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)
