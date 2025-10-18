@@ -16,6 +16,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<bool> removeCurrencyRequirements;
         private ConfigEntry<KeyboardShortcut> resetDeclinedAreaUpdates;
         private ConfigEntry<double> thresholdCurrencyHandover;
         private ConfigEntry<bool> useDialogWindow;
@@ -68,6 +69,9 @@ namespace HideoutAutomation
             this.useDialogWindow = this.Config.Bind("Upgrading", "UseDialogWindow", true, "Always show a dialog window to accept the hideout upgrade.");
             this.useDialogWindow.SettingChanged += this.global_SettingChanged;
 
+            this.removeCurrencyRequirements = this.Config.Bind("Payment", "RemoveCurrencyRequirements", false, "Remove the currency requirements for construction and upgrades.");
+            this.removeCurrencyRequirements.SettingChanged += this.global_SettingChanged;
+
             this.setGlobalSettings();
         }
 
@@ -77,6 +81,7 @@ namespace HideoutAutomation
             Globals.AutoConstruct = this.autoConstruct.Value;
             Globals.AutoInstall = this.autoInstall.Value;
             Globals.AutoUpgrade = this.autoUpgrade.Value;
+            Globals.RemoveCurrencyRequirements = this.removeCurrencyRequirements.Value;
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;

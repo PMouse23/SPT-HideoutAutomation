@@ -10,6 +10,7 @@ internal static class Globals
     public static bool AutoUpgrade = true;
     public static bool Debug = false;
     public static KeyboardShortcut InvestigateKeys = new KeyboardShortcut(KeyCode.I, KeyCode.LeftControl);
+    public static bool RemoveCurrencyRequirements = false;
     public static KeyboardShortcut ResetDeclinedAreaUpdates = new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl);
     public static double ThresholdCurrencyHandover = 1.5;
     public static bool UseDialogWindow = true;

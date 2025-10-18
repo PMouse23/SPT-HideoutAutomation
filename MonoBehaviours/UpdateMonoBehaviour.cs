@@ -305,8 +305,8 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void removeCurrencyRequirements(AreaData data)
         {
-            //if (Globals.RemoveCurrencyRequirements)
-            //    return;
+            if (Globals.RemoveCurrencyRequirements == false)
+                return;
             List<Requirement> requirementsToRemove = [];
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
