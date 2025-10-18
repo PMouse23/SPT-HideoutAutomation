@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 
 #nullable enable
@@ -28,10 +29,33 @@ namespace HideoutAutomation.MonoBehaviours
                 LogHelper.LogInfo($"StartedCoroutine");
         }
 
+        private static string addSpaces(string input, int length)
+        {
+            if (input == null)
+                input = string.Empty;
+            if (input.Length > length)
+                return input.Substring(0, length);
+            int div = length - input.Length;
+            length = input.Length + div * 2;
+            return input.PadRight(length);
+        }
+
+        private static string addSpacesAndFixCount(int count, int length)
+        {
+            string str = string.Empty;
+            if (count > 1000000)
+                str = $"{count / 1000000}m";
+            else if (count > 1000)
+                str = $"{count / 1000}k";
+            else
+                str = count.ToString();
+            return addSpaces(str, length);
+        }
+
         private IEnumerator coroutine()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.cancellationToken = cancellationTokenSource.Token;
+            this.cancellationToken = this.cancellationTokenSource.Token;
             while (true)
             {
                 if (Globals.Debug)
@@ -55,12 +79,11 @@ namespace HideoutAutomation.MonoBehaviours
                     {
                         foreach (AreaData data in hideout.AreaDatas)
                         {
-                            if (cancellationTokenSource.IsCancellationRequested)
+                            if (this.cancellationTokenSource.IsCancellationRequested)
                                 break;
                             EAreaStatus status = data.Status;
                             EAreaType areaType = data.Template.Type;
                             string name = data.Template.Name;
-                            int nextLevel = data.NextStage?.Level ?? -1;
                             if (Globals.Debug)
                             {
                                 LogHelper.LogInfo($"EAreaType: {areaType}, Status={status}");
@@ -71,7 +94,6 @@ namespace HideoutAutomation.MonoBehaviours
                             {
                                 case EAreaStatus.ReadyToConstruct:
                                 case EAreaStatus.ReadyToUpgrade:
-                                default: //HACK testing only
                                     if (this.isAllowedToConstuctOrUpdate(data, status))
                                     {
                                         Action upgradeAction = new Action(() =>
@@ -83,9 +105,7 @@ namespace HideoutAutomation.MonoBehaviours
                                         {
                                             if (this.inDialog == false)
                                             {
-                                                //TODO the text is centered so add spaces to make the requirements line up.
-                                                //TODO add the requrements to the message.
-                                                string description = $"Upgrade {name} to level {nextLevel}. {Environment.NewLine} - Requirement1 {Environment.NewLine} - Requirement2";
+                                                string description = this.getUpgradeDescription(data);
                                                 this.showDialogWindow(description, () =>
                                                 {
                                                     upgradeAction.Invoke();
@@ -130,11 +150,67 @@ namespace HideoutAutomation.MonoBehaviours
             return count;
         }
 
+        private string getUpgradeDescription(AreaData data)
+        {
+            string name = data.Template.Name;
+            int nextLevel = -1;
+            Stage? nextStage = data.NextStage;
+            string requirements = Environment.NewLine;
+            string itemRequirements = string.Empty;
+            string areaRequirements = string.Empty;
+            string skillRequirements = string.Empty;
+            if (nextStage != null)
+            {
+                nextLevel = nextStage.Level;
+                itemRequirements += $"{Environment.NewLine}Expected Inventory Name";
+                foreach (Requirement requirement in nextStage.Requirements)
+                {
+                    if (requirement is ItemRequirement itemRequirement)
+                    {
+                        string itemName = itemRequirement.ItemName;
+                        int count = itemRequirement.BaseCount;
+                        int inventory = this.getItemCount(itemRequirement.TemplateId);
+                        itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
+                    }
+                    if (requirement is AreaRequirement areaRequirement)
+                    {
+                        EAreaType areaType = areaRequirement.AreaType;
+                        int requiredLevel = areaRequirement.RequiredLevel;
+                        areaRequirements += $"{Environment.NewLine} - {areaType} level {requiredLevel}.";
+                    }
+                    if (requirement is SkillRequirement skillRequirement)
+                    {
+                        string skillName = skillRequirement.SkillName;
+                        int skillLevel = skillRequirement.SkillLevel;
+                        skillRequirements += $"{Environment.NewLine} - {skillName} level {skillLevel}.";
+                    }
+                }
+                requirements += $"{Environment.NewLine}Items:";
+                requirements += itemRequirements;
+                if (string.IsNullOrWhiteSpace(areaRequirements) == false)
+                {
+                    requirements += $"{Environment.NewLine}{Environment.NewLine}Area(s):";
+                    requirements += areaRequirements;
+                }
+                if (string.IsNullOrWhiteSpace(skillRequirements) == false)
+                {
+                    requirements += $"{Environment.NewLine}{Environment.NewLine}Skill(s):";
+                    requirements += skillRequirements;
+                }
+            }
+            return $"Upgrade {name} to level {nextLevel}.{requirements}";
+        }
+
         private bool isAllowedToConstuctOrUpdate(AreaData data, EAreaStatus status)
         {
-            if (status == EAreaStatus.ReadyToConstruct && Globals.AutoConstruct == false)
+            if (status != EAreaStatus.ReadyToConstruct
+             && status != EAreaStatus.ReadyToUpgrade)
                 return false;
-            if (status == EAreaStatus.ReadyToUpgrade && Globals.AutoUpgrade == false)
+            if (status == EAreaStatus.ReadyToConstruct
+             && Globals.AutoConstruct == false)
+                return false;
+            if (status == EAreaStatus.ReadyToUpgrade
+             && Globals.AutoUpgrade == false)
                 return false;
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
@@ -179,8 +255,11 @@ namespace HideoutAutomation.MonoBehaviours
             {
                 this.inDialog = false;
             };
-            var handle = ItemUiContext.Instance.ShowMessageWindow(description, acceptAction, cancelAction);
-            //handle.OnAccept
+            string? caption = null;
+            int time = 0;
+            bool forceShow = false;
+            TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft;
+            var handle = ItemUiContext.Instance.ShowMessageWindow(description, acceptAction, cancelAction, caption, time, forceShow, alignment);
         }
     }
 }
