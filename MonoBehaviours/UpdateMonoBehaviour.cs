@@ -18,15 +18,49 @@ namespace HideoutAutomation.MonoBehaviours
 {
     internal class UpdateMonoBehaviour : MonoBehaviour
     {
+        private readonly List<EAreaType> declinedAreaUpdates = new List<EAreaType>();
         private CancellationToken? cancellationToken;
         private CancellationTokenSource? cancellationTokenSource;
+        private bool didInvestigate = false;
         private bool inDialog = false;
+
+        private DateTime? lastRun = null;
 
         public void Start()
         {
             this.StartCoroutine(this.coroutine());
             if (Globals.Debug)
-                LogHelper.LogInfo($"StartedCoroutine");
+                LogHelper.LogInfo($"Started coroutine");
+        }
+
+        public void Update()
+        {
+            bool shouldInvestigate = Globals.Debug && Globals.InvestigateKeys.IsPressed();
+            if (this.didInvestigate != shouldInvestigate)
+            {
+                this.didInvestigate = shouldInvestigate;
+                if (shouldInvestigate)
+                    this.investigate();
+            }
+            if (Globals.ResetDeclinedAreaUpdates.IsPressed() == false)
+                return;
+            if (RaidTimeUtil.HasRaidLoaded())
+                return;
+            if (this.lastRun == null)
+                return;
+            if (Globals.Debug)
+                this.investigate();
+            this.StopAllCoroutines();
+            this.lastRun = null;
+            this.cancellationTokenSource?.Cancel();
+            this.StopAllCoroutines();
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification("Stopped coroutine");
+            this.declinedAreaUpdates.Clear();
+            LogHelper.LogInfoWithNotification($"Declined Area(s) reset.");
+            this.StartCoroutine(this.coroutine());
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification("Started coroutine");
         }
 
         private static string addSpaces(string input, int length)
@@ -61,6 +95,9 @@ namespace HideoutAutomation.MonoBehaviours
                 if (Globals.Debug)
                     LogHelper.LogInfo($"Started new run.");
                 yield return new WaitForSeconds(0.5f);
+                this.lastRun = DateTime.Now;
+                if (this.cancellationToken?.IsCancellationRequested == true)
+                    yield break;
                 if (RaidTimeUtil.HasRaidLoaded() == false)
                 {
                     if (Globals.Debug)
@@ -94,7 +131,7 @@ namespace HideoutAutomation.MonoBehaviours
                             {
                                 case EAreaStatus.ReadyToConstruct:
                                 case EAreaStatus.ReadyToUpgrade:
-                                    if (this.isAllowedToConstuctOrUpdate(data, status))
+                                    if (this.isAllowedToConstuctOrUpdate(data, areaType, status))
                                     {
                                         Action upgradeAction = new Action(() =>
                                         {
@@ -111,6 +148,7 @@ namespace HideoutAutomation.MonoBehaviours
                                                     upgradeAction.Invoke();
                                                 }, () =>
                                                 {
+                                                    this.declinedAreaUpdates.Add(areaType);
                                                     if (Globals.Debug)
                                                         LogHelper.LogInfo("upgrade declined");
                                                 });
@@ -201,7 +239,24 @@ namespace HideoutAutomation.MonoBehaviours
             return $"Upgrade {name} to level {nextLevel}.{requirements}";
         }
 
-        private bool isAllowedToConstuctOrUpdate(AreaData data, EAreaStatus status)
+        private void investigate()
+        {
+            TimeSpan? dtm = DateTime.Now - this.lastRun;
+            LogHelper.LogInfoWithNotification($"HA: Last run: {dtm?.Seconds ?? -1} seconds ago.");
+            if (RaidTimeUtil.HasRaidLoaded())
+                LogHelper.LogErrorWithNotification("HA: Appears to have raid loaded");
+            if (this.cancellationToken?.IsCancellationRequested == true)
+                LogHelper.LogErrorWithNotification("HA: CancellationRequested");
+            HideoutClass hideout = Singleton<HideoutClass>.Instance;
+            if (hideout == null)
+            {
+                if (Globals.Debug)
+                    LogHelper.LogErrorWithNotification($"HA: hideout == null");
+            }
+            LogHelper.LogInfoWithNotification($"HA: hideout: {hideout?.AreaDatas.Count ?? 0} areas.");
+        }
+
+        private bool isAllowedToConstuctOrUpdate(AreaData data, EAreaType areaType, EAreaStatus status)
         {
             if (status != EAreaStatus.ReadyToConstruct
              && status != EAreaStatus.ReadyToUpgrade)
@@ -211,6 +266,8 @@ namespace HideoutAutomation.MonoBehaviours
                 return false;
             if (status == EAreaStatus.ReadyToUpgrade
              && Globals.AutoUpgrade == false)
+                return false;
+            if (this.declinedAreaUpdates.Contains(areaType))
                 return false;
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)

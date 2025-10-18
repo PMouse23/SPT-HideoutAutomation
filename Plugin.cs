@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Patches.Application;
 using System;
+using UnityEngine;
 
 namespace HideoutAutomation
 {
@@ -15,6 +16,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<KeyboardShortcut> resetDeclinedAreaUpdates;
         private ConfigEntry<double> thresholdCurrencyHandover;
         private ConfigEntry<bool> useDialogWindow;
 
@@ -57,10 +59,13 @@ namespace HideoutAutomation
             this.autoUpgrade = this.Config.Bind("Automation", "AutoUpgrade", true, "Auto update areas when they're available.");
             this.autoUpgrade.SettingChanged += this.global_SettingChanged;
 
-            this.thresholdCurrencyHandover = this.Config.Bind("Handover Items", "ThresholdCurrencyHandover", 1.5, "Threshold for the number of times you want to have the currency amount before handing it in.");
+            this.resetDeclinedAreaUpdates = this.Config.Bind("Upgrading", "RestartUpgradingAreas", new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl), "Keys to press to reset the (in memory) declined area upgrades and restarts the couritine. So the DialogWindow will pop up again for these areas.");
+            this.resetDeclinedAreaUpdates.SettingChanged += this.global_SettingChanged;
+
+            this.thresholdCurrencyHandover = this.Config.Bind("Upgrading", "ThresholdCurrencyHandover", 1.5, "Threshold for the number of times you want to have the currency amount before spending it.");
             this.thresholdCurrencyHandover.SettingChanged += this.global_SettingChanged;
 
-            this.useDialogWindow = this.Config.Bind("Handover Items", "UseDialogWindow", true, "Always show a dialog window to accept the hideout upgrade.");
+            this.useDialogWindow = this.Config.Bind("Upgrading", "UseDialogWindow", true, "Always show a dialog window to accept the hideout upgrade.");
             this.useDialogWindow.SettingChanged += this.global_SettingChanged;
 
             this.setGlobalSettings();
@@ -72,6 +77,7 @@ namespace HideoutAutomation
             Globals.AutoConstruct = this.autoConstruct.Value;
             Globals.AutoInstall = this.autoInstall.Value;
             Globals.AutoUpgrade = this.autoUpgrade.Value;
+            Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
         }
