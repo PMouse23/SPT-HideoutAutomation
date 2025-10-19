@@ -416,7 +416,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-# TaskAutomation
+# HideoutAutomation
 /Libraries/
 /HideoutAutomation.sln
 /CodeMaid.config
