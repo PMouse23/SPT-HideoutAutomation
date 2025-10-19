@@ -23,7 +23,11 @@ namespace HideoutAutomation.MonoBehaviours
         private CancellationTokenSource? cancellationTokenSource;
         private bool didInvestigate = false;
         private bool inDialog = false;
+        private bool? lastRemoveAreaRequirements = null;
         private bool? lastRemoveCurrencyRequirements = null;
+        private bool? lastRemoveItemRequirements = null;
+        private bool? lastRemoveSkillRequirements = null;
+        private bool? lastRemoveTraderRequirements = null;
         private DateTime? lastRun = null;
 
         public void Start()
@@ -117,12 +121,9 @@ namespace HideoutAutomation.MonoBehaviours
                             LogHelper.LogInfo($"hideout == null");
                         yield return new WaitForSeconds(0.5f);
                     }
-                    if (this.lastRemoveCurrencyRequirements == null)
-                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
-                    else if (this.lastRemoveCurrencyRequirements != Globals.RemoveCurrencyRequirements)
+                    if (this.hasRequirementSettingChanged())
                     {
-                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
-                        this.showDialogWindow("Remove currency requirements has changed. Your game needs to be recreated from the backend. Do this now?", () =>
+                        this.showDialogWindow("One of the requirement settings has been changed. Your game needs to be recreated from the backend. Do this now?", () =>
                         {
                             this.reloadHideoutRequirements(hideout);
                         }, () => { });
@@ -143,7 +144,7 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
-                            this.removeCurrencyRequirements(data);
+                            this.removeRequirements(data);
                             switch (status)
                             {
                                 case EAreaStatus.ReadyToConstruct:
@@ -207,6 +208,7 @@ namespace HideoutAutomation.MonoBehaviours
             int nextLevel = -1;
             Stage? nextStage = data.NextStage;
             string requirements = Environment.NewLine;
+            bool hasItemRequirements = false;
             string itemRequirements = string.Empty;
             string areaRequirements = string.Empty;
             string skillRequirements = string.Empty;
@@ -222,6 +224,7 @@ namespace HideoutAutomation.MonoBehaviours
                         int count = itemRequirement.BaseCount;
                         int inventory = this.getItemCount(itemRequirement.TemplateId);
                         itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
+                        hasItemRequirements = true;
                     }
                     if (requirement is AreaRequirement areaRequirement)
                     {
@@ -236,8 +239,11 @@ namespace HideoutAutomation.MonoBehaviours
                         skillRequirements += $"{Environment.NewLine} - {skillName} level {skillLevel}.";
                     }
                 }
-                requirements += $"{Environment.NewLine}Items:";
-                requirements += itemRequirements;
+                if (hasItemRequirements)
+                {
+                    requirements += $"{Environment.NewLine}Items:";
+                    requirements += itemRequirements;
+                }
                 if (string.IsNullOrWhiteSpace(areaRequirements) == false)
                 {
                     requirements += $"{Environment.NewLine}{Environment.NewLine}Area(s):";
@@ -250,6 +256,24 @@ namespace HideoutAutomation.MonoBehaviours
                 }
             }
             return $"Upgrade {name} to level {nextLevel}.{requirements}";
+        }
+
+        private bool hasRequirementSettingChanged()
+        {
+            if (this.lastRemoveCurrencyRequirements == null)
+            {
+                this.lastRemoveAreaRequirements = Globals.RemoveAreaRequirements;
+                this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
+                this.lastRemoveItemRequirements = Globals.RemoveItemRequirements;
+                this.lastRemoveSkillRequirements = Globals.RemoveSkillRequirements;
+                this.lastRemoveTraderRequirements = Globals.RemoveTraderRequirements;
+                return false;
+            }
+            return this.lastRemoveAreaRequirements != Globals.RemoveAreaRequirements
+                || this.lastRemoveCurrencyRequirements != Globals.RemoveCurrencyRequirements
+                || this.lastRemoveItemRequirements != Globals.RemoveItemRequirements
+                || this.lastRemoveSkillRequirements != Globals.RemoveSkillRequirements
+                || this.lastRemoveTraderRequirements != Globals.RemoveTraderRequirements;
         }
 
         private void investigate()
@@ -317,6 +341,12 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void reloadHideoutRequirements(HideoutClass? hideout)
         {
+            this.lastRemoveAreaRequirements = null;
+            this.lastRemoveCurrencyRequirements = null;
+            this.lastRemoveItemRequirements = null;
+            this.lastRemoveSkillRequirements = null;
+            this.lastRemoveTraderRequirements = null;
+
             if (hideout == null)
                 return;
             foreach (AreaData areaData in hideout.AreaDatas)
@@ -328,8 +358,6 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void reloadRequirements(AreaData data)
         {
-            AreaData tempArea = new AreaData(data.Template);
-            data.NextStage.UpdateData(tempArea.NextStage);
             if (TarkovApplication.Exist(out TarkovApplication? tarkovApplication))
             {
                 tarkovApplication.HideoutControllerAccess.UnloadHideout();
@@ -337,17 +365,36 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private void removeCurrencyRequirements(AreaData data)
+        private void removeRequirements(AreaData data)
         {
-            if (Globals.RemoveCurrencyRequirements == false)
+            if (Globals.RemoveAreaRequirements == false
+             && Globals.RemoveCurrencyRequirements == false
+             && Globals.RemoveItemRequirements == false
+             && Globals.RemoveSkillRequirements == false
+             && Globals.RemoveTraderRequirements == false)
                 return;
             List<Requirement> requirementsToRemove = [];
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
-                if (requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass moneyItem)
+            {
+                if (Globals.RemoveAreaRequirements && requirement is AreaRequirement areaRequirement)
                     requirementsToRemove.Add(requirement);
-            foreach (Requirement requirement in requirementsToRemove)
-                requirements.Data.Remove(requirement);
+                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not MoneyItemClass)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveSkillRequirements && requirement is SkillRequirement skillRequirement)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveTraderRequirements && requirement is TraderUnlockRequirement traderUnlockRequirement
+                                                          || requirement is TraderLoyaltyRequirement traderLoyaltyRequirement)
+                    requirementsToRemove.Add(requirement);
+            }
+            if (requirementsToRemove.Count > 0)
+            {
+                foreach (Requirement requirement in requirementsToRemove)
+                    requirements.Data.Remove(requirement);
+                data.DecideStatus(data.CurrentLevel);
+            }
         }
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)

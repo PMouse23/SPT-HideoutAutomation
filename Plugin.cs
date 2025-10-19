@@ -16,7 +16,12 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<bool> removeAreaRequirements;
         private ConfigEntry<bool> removeCurrencyRequirements;
+        private ConfigEntry<bool> removeItemRequirements;
+        private ConfigEntry<bool> removeSkillRequirements;
+        private ConfigEntry<bool> removeTraderRequirements;
+
         private ConfigEntry<KeyboardShortcut> resetDeclinedAreaUpdates;
         private ConfigEntry<double> thresholdCurrencyHandover;
         private ConfigEntry<bool> useDialogWindow;
@@ -69,8 +74,20 @@ namespace HideoutAutomation
             this.useDialogWindow = this.Config.Bind("Upgrading", "UseDialogWindow", true, "Always show a dialog window to accept the hideout upgrade.");
             this.useDialogWindow.SettingChanged += this.global_SettingChanged;
 
+            this.removeAreaRequirements = this.Config.Bind("Payment", "RemoveAreaRequirements", false, "Remove the area requirements for construction and upgrades.");
+            this.removeAreaRequirements.SettingChanged += this.global_SettingChanged;
+
             this.removeCurrencyRequirements = this.Config.Bind("Payment", "RemoveCurrencyRequirements", false, "Remove the currency requirements for construction and upgrades.");
             this.removeCurrencyRequirements.SettingChanged += this.global_SettingChanged;
+
+            this.removeItemRequirements = this.Config.Bind("Payment", "RemoveItemRequirements", false, "Remove the item requirements for construction and upgrades.");
+            this.removeItemRequirements.SettingChanged += this.global_SettingChanged;
+
+            this.removeSkillRequirements = this.Config.Bind("Payment", "RemoveSkillRequirements", false, "Remove the skill requirements for construction and upgrades.");
+            this.removeSkillRequirements.SettingChanged += this.global_SettingChanged;
+
+            this.removeTraderRequirements = this.Config.Bind("Payment", "RemoveTraderRequirements", false, "Remove the trader requirements for construction and upgrades.");
+            this.removeTraderRequirements.SettingChanged += this.global_SettingChanged;
 
             this.setGlobalSettings();
         }
@@ -81,7 +98,11 @@ namespace HideoutAutomation
             Globals.AutoConstruct = this.autoConstruct.Value;
             Globals.AutoInstall = this.autoInstall.Value;
             Globals.AutoUpgrade = this.autoUpgrade.Value;
+            Globals.RemoveAreaRequirements = this.removeAreaRequirements.Value;
             Globals.RemoveCurrencyRequirements = this.removeCurrencyRequirements.Value;
+            Globals.RemoveItemRequirements = this.removeItemRequirements.Value;
+            Globals.RemoveSkillRequirements = this.removeSkillRequirements.Value;
+            Globals.RemoveTraderRequirements = this.removeTraderRequirements.Value;
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
