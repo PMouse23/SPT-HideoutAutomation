@@ -109,8 +109,7 @@ namespace HideoutAutomation.MonoBehaviours
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Not in a raid.");
                     if (Globals.Debug)
-                        LogHelper.LogInfo($"Handle started quests.");
-
+                        LogHelper.LogInfo($"Handle hideout upgrades.");
                     HideoutClass hideout = Singleton<HideoutClass>.Instance;
                     if (hideout == null)
                     {
