@@ -157,20 +157,16 @@ namespace HideoutAutomation.MonoBehaviours
                                         });
                                         if (Globals.UseDialogWindow)
                                         {
-                                            if (this.inDialog == false)
+                                            string description = this.getUpgradeDescription(data);
+                                            this.showDialogWindow(description, () =>
                                             {
-                                                string description = this.getUpgradeDescription(data);
-                                                this.showDialogWindow(description, () =>
-                                                {
-                                                    upgradeAction.Invoke();
-                                                }, () =>
-                                                {
-                                                    this.declinedAreaUpdates.Add(areaType);
-                                                    if (Globals.Debug)
-                                                        LogHelper.LogInfo("upgrade declined");
-                                                });
-                                                this.inDialog = true;
-                                            }
+                                                upgradeAction.Invoke();
+                                            }, () =>
+                                            {
+                                                this.declinedAreaUpdates.Add(areaType);
+                                                if (Globals.Debug)
+                                                    LogHelper.LogInfo("upgrade declined");
+                                            });
                                         }
                                         else
                                             upgradeAction.Invoke();
