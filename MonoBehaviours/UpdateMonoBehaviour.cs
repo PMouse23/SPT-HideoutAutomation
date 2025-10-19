@@ -190,7 +190,7 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private int getItemCount(string templateId)
+        private int getItemCount(string templateId, bool isSpawnedInSession)
         {
             HideoutClass hideout = Singleton<HideoutClass>.Instance;
             if (hideout == null || hideout.InventoryController_0 == null)
@@ -198,7 +198,10 @@ namespace HideoutAutomation.MonoBehaviours
             int count = 0;
             IEnumerable<Item> items = hideout.InventoryController_0.Inventory.GetAllItemByTemplate(templateId);
             foreach (Item item in items)
-                count += item.StackObjectsCount;
+            {
+                if (isSpawnedInSession == false || item.SpawnedInSession == true)
+                    count += item.StackObjectsCount;
+            }
             return count;
         }
 
@@ -222,7 +225,7 @@ namespace HideoutAutomation.MonoBehaviours
                     {
                         string itemName = itemRequirement.ItemName;
                         int count = itemRequirement.BaseCount;
-                        int inventory = this.getItemCount(itemRequirement.TemplateId);
+                        int inventory = this.getItemCount(itemRequirement.TemplateId, itemRequirement.IsSpawnedInSession);
                         itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
                         hasItemRequirements = true;
                     }
@@ -332,7 +335,7 @@ namespace HideoutAutomation.MonoBehaviours
         {
             if (item is not MoneyItemClass moneyItemClass)
                 return false;
-            int itemCount = this.getItemCount(item.TemplateId);
+            int itemCount = this.getItemCount(item.TemplateId, item.SpawnedInSession);
             handoverValue = (int)(handoverValue * Globals.ThresholdCurrencyHandover);
             if (Globals.Debug)
                 LogHelper.LogInfo($"count: {itemCount}, expected: {handoverValue}");
