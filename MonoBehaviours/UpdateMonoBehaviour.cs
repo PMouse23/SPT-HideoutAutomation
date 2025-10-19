@@ -23,7 +23,11 @@ namespace HideoutAutomation.MonoBehaviours
         private CancellationTokenSource? cancellationTokenSource;
         private bool didInvestigate = false;
         private bool inDialog = false;
+        private bool? lastRemoveAreaRequirements = null;
         private bool? lastRemoveCurrencyRequirements = null;
+        private bool? lastRemoveItemRequirements = null;
+        private bool? lastRemoveSkillRequirements = null;
+        private bool? lastRemoveTraderRequirements = null;
         private DateTime? lastRun = null;
 
         public void Start()
@@ -117,12 +121,9 @@ namespace HideoutAutomation.MonoBehaviours
                             LogHelper.LogInfo($"hideout == null");
                         yield return new WaitForSeconds(0.5f);
                     }
-                    if (this.lastRemoveCurrencyRequirements == null)
-                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
-                    else if (this.lastRemoveCurrencyRequirements != Globals.RemoveCurrencyRequirements)
+                    if (this.hasRequirementSettingChanged())
                     {
-                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
-                        this.showDialogWindow("Remove currency requirements has changed. Your game needs to be recreated from the backend. Do this now?", () =>
+                        this.showDialogWindow("One of the requirement settings has been changed. Your game needs to be recreated from the backend. Do this now?", () =>
                         {
                             this.reloadHideoutRequirements(hideout);
                         }, () => { });
@@ -257,6 +258,24 @@ namespace HideoutAutomation.MonoBehaviours
             return $"Upgrade {name} to level {nextLevel}.{requirements}";
         }
 
+        private bool hasRequirementSettingChanged()
+        {
+            if (this.lastRemoveCurrencyRequirements == null)
+            {
+                this.lastRemoveAreaRequirements = Globals.RemoveAreaRequirements;
+                this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
+                this.lastRemoveItemRequirements = Globals.RemoveItemRequirements;
+                this.lastRemoveSkillRequirements = Globals.RemoveSkillRequirements;
+                this.lastRemoveTraderRequirements = Globals.RemoveTraderRequirements;
+                return false;
+            }
+            return this.lastRemoveAreaRequirements != Globals.RemoveAreaRequirements
+                || this.lastRemoveCurrencyRequirements != Globals.RemoveCurrencyRequirements
+                || this.lastRemoveItemRequirements != Globals.RemoveItemRequirements
+                || this.lastRemoveSkillRequirements != Globals.RemoveSkillRequirements
+                || this.lastRemoveTraderRequirements != Globals.RemoveTraderRequirements;
+        }
+
         private void investigate()
         {
             TimeSpan? dtm = DateTime.Now - this.lastRun;
@@ -322,6 +341,12 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void reloadHideoutRequirements(HideoutClass? hideout)
         {
+            this.lastRemoveAreaRequirements = null;
+            this.lastRemoveCurrencyRequirements = null;
+            this.lastRemoveItemRequirements = null;
+            this.lastRemoveSkillRequirements = null;
+            this.lastRemoveTraderRequirements = null;
+
             if (hideout == null)
                 return;
             foreach (AreaData areaData in hideout.AreaDatas)
