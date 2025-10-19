@@ -44,7 +44,7 @@ namespace HideoutAutomation.MonoBehaviours
             }
             if (Globals.ResetDeclinedAreaUpdates.IsPressed() == false)
                 return;
-            if (RaidTimeUtil.HasRaidLoaded())
+            if (hasRaidLoaded())
                 return;
             if (this.lastRun == null)
                 return;
@@ -86,6 +86,12 @@ namespace HideoutAutomation.MonoBehaviours
             return addSpaces(str, length);
         }
 
+        private static bool hasRaidLoaded()
+        {
+            return RaidTimeUtil.HasRaidLoaded()
+                && Singleton<AbstractGame>.Instance?.GameType != EGameType.Hideout;
+        }
+
         private IEnumerator coroutine()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -98,7 +104,7 @@ namespace HideoutAutomation.MonoBehaviours
                 this.lastRun = DateTime.Now;
                 if (this.cancellationToken?.IsCancellationRequested == true)
                     yield break;
-                if (RaidTimeUtil.HasRaidLoaded() == false)
+                if (hasRaidLoaded() == false)
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Not in a raid.");
@@ -127,6 +133,7 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
+                            this.removeCurrencyRequirements(data);
                             switch (status)
                             {
                                 case EAreaStatus.ReadyToConstruct:
@@ -243,7 +250,7 @@ namespace HideoutAutomation.MonoBehaviours
         {
             TimeSpan? dtm = DateTime.Now - this.lastRun;
             LogHelper.LogInfoWithNotification($"HA: Last run: {dtm?.Seconds ?? -1} seconds ago.");
-            if (RaidTimeUtil.HasRaidLoaded())
+            if (hasRaidLoaded())
                 LogHelper.LogErrorWithNotification("HA: Appears to have raid loaded");
             if (this.cancellationToken?.IsCancellationRequested == true)
                 LogHelper.LogErrorWithNotification("HA: CancellationRequested");
@@ -300,6 +307,19 @@ namespace HideoutAutomation.MonoBehaviours
             if (Globals.Debug)
                 LogHelper.LogInfo($"count: {itemCount}, expected: {handoverValue}");
             return itemCount < handoverValue;
+        }
+
+        private void removeCurrencyRequirements(AreaData data)
+        {
+            if (Globals.RemoveCurrencyRequirements == false)
+                return;
+            List<Requirement> requirementsToRemove = [];
+            RelatedRequirements requirements = data.NextStage.Requirements;
+            foreach (Requirement requirement in requirements)
+                if (requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass moneyItem)
+                    requirementsToRemove.Add(requirement);
+            foreach (Requirement requirement in requirementsToRemove)
+                requirements.Data.Remove(requirement);
         }
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)
