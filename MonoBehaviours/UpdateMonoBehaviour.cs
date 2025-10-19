@@ -143,7 +143,7 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
-                            this.removeCurrencyRequirements(data);
+                            this.removeRequirements(data);
                             switch (status)
                             {
                                 case EAreaStatus.ReadyToConstruct:
@@ -328,8 +328,6 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void reloadRequirements(AreaData data)
         {
-            AreaData tempArea = new AreaData(data.Template);
-            data.NextStage.UpdateData(tempArea.NextStage);
             if (TarkovApplication.Exist(out TarkovApplication? tarkovApplication))
             {
                 tarkovApplication.HideoutControllerAccess.UnloadHideout();
@@ -337,17 +335,36 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private void removeCurrencyRequirements(AreaData data)
+        private void removeRequirements(AreaData data)
         {
-            if (Globals.RemoveCurrencyRequirements == false)
+            if (Globals.RemoveAreaRequirements == false
+             && Globals.RemoveCurrencyRequirements == false
+             && Globals.RemoveItemRequirements == false
+             && Globals.RemoveSkillRequirements == false
+             && Globals.RemoveTraderRequirements == false)
                 return;
             List<Requirement> requirementsToRemove = [];
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
-                if (requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass moneyItem)
+            {
+                if (Globals.RemoveAreaRequirements && requirement is AreaRequirement areaRequirement)
                     requirementsToRemove.Add(requirement);
-            foreach (Requirement requirement in requirementsToRemove)
-                requirements.Data.Remove(requirement);
+                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not MoneyItemClass)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveSkillRequirements && requirement is SkillRequirement skillRequirement)
+                    requirementsToRemove.Add(requirement);
+                else if (Globals.RemoveTraderRequirements && requirement is TraderUnlockRequirement traderUnlockRequirement
+                                                          || requirement is TraderLoyaltyRequirement traderLoyaltyRequirement)
+                    requirementsToRemove.Add(requirement);
+            }
+            if (requirementsToRemove.Count > 0)
+            {
+                foreach (Requirement requirement in requirementsToRemove)
+                    requirements.Data.Remove(requirement);
+                data.DecideStatus(data.CurrentLevel);
+            }
         }
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)
