@@ -207,6 +207,7 @@ namespace HideoutAutomation.MonoBehaviours
             int nextLevel = -1;
             Stage? nextStage = data.NextStage;
             string requirements = Environment.NewLine;
+            bool hasItemRequirements = false;
             string itemRequirements = string.Empty;
             string areaRequirements = string.Empty;
             string skillRequirements = string.Empty;
@@ -222,6 +223,7 @@ namespace HideoutAutomation.MonoBehaviours
                         int count = itemRequirement.BaseCount;
                         int inventory = this.getItemCount(itemRequirement.TemplateId);
                         itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
+                        hasItemRequirements = true;
                     }
                     if (requirement is AreaRequirement areaRequirement)
                     {
@@ -236,8 +238,11 @@ namespace HideoutAutomation.MonoBehaviours
                         skillRequirements += $"{Environment.NewLine} - {skillName} level {skillLevel}.";
                     }
                 }
-                requirements += $"{Environment.NewLine}Items:";
-                requirements += itemRequirements;
+                if (hasItemRequirements)
+                {
+                    requirements += $"{Environment.NewLine}Items:";
+                    requirements += itemRequirements;
+                }
                 if (string.IsNullOrWhiteSpace(areaRequirements) == false)
                 {
                     requirements += $"{Environment.NewLine}{Environment.NewLine}Area(s):";
