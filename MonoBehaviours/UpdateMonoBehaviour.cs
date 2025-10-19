@@ -23,7 +23,7 @@ namespace HideoutAutomation.MonoBehaviours
         private CancellationTokenSource? cancellationTokenSource;
         private bool didInvestigate = false;
         private bool inDialog = false;
-
+        private bool? lastRemoveCurrencyRequirements = null;
         private DateTime? lastRun = null;
 
         public void Start()
@@ -116,6 +116,17 @@ namespace HideoutAutomation.MonoBehaviours
                         if (Globals.Debug)
                             LogHelper.LogInfo($"hideout == null");
                         yield return new WaitForSeconds(0.5f);
+                    }
+                    if (this.lastRemoveCurrencyRequirements == null)
+                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
+                    else if (this.lastRemoveCurrencyRequirements != Globals.RemoveCurrencyRequirements)
+                    {
+                        this.lastRemoveCurrencyRequirements = Globals.RemoveCurrencyRequirements;
+                        this.showDialogWindow("Remove currency requirements has changed. Your game needs to be recreated from the backend. Do this now?", () =>
+                        {
+                            this.reloadHideoutRequirements(hideout);
+                        }, () => { });
+                        yield return new WaitForSeconds(1f);
                     }
                     if (hideout != null && hideout.AreaDatas.Count > 0)
                     {
@@ -308,6 +319,28 @@ namespace HideoutAutomation.MonoBehaviours
             return itemCount < handoverValue;
         }
 
+        private void reloadHideoutRequirements(HideoutClass? hideout)
+        {
+            if (hideout == null)
+                return;
+            foreach (AreaData areaData in hideout.AreaDatas)
+                this.reloadRequirements(areaData);
+
+            if (Globals.Debug)
+                LogHelper.LogInfo("Reloaded hideout requirements.");
+        }
+
+        private void reloadRequirements(AreaData data)
+        {
+            AreaData tempArea = new AreaData(data.Template);
+            data.NextStage.UpdateData(tempArea.NextStage);
+            if (TarkovApplication.Exist(out TarkovApplication? tarkovApplication))
+            {
+                tarkovApplication.HideoutControllerAccess.UnloadHideout();
+                tarkovApplication.RecreateCurrentBackend();
+            }
+        }
+
         private void removeCurrencyRequirements(AreaData data)
         {
             if (Globals.RemoveCurrencyRequirements == false)
@@ -323,6 +356,8 @@ namespace HideoutAutomation.MonoBehaviours
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)
         {
+            if (this.inDialog)
+                return;
             acceptAction += () =>
             {
                 this.inDialog = false;
@@ -336,6 +371,7 @@ namespace HideoutAutomation.MonoBehaviours
             bool forceShow = false;
             TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft;
             var handle = ItemUiContext.Instance.ShowMessageWindow(description, acceptAction, cancelAction, caption, time, forceShow, alignment);
+            this.inDialog = true;
         }
     }
 }
