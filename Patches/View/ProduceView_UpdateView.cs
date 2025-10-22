@@ -5,7 +5,6 @@ using EFT.UI;
 using HarmonyLib;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
-using SPT.Common.Utils;
 using SPT.Reflection.Patching;
 using System;
 using System.Linq;
@@ -33,30 +32,15 @@ namespace HideoutAutomation.Patches.View
         private static void OnClick(ProduceView produceView)
         {
             string schemeId = produceView.Scheme._id;
+            EAreaType areaType = (EAreaType)produceView.Scheme.areaType;
             Requirement[] requirements = produceView.Scheme.requirements;
             ProductionBuildStoreModel productionBuildStoreModel = new ProductionBuildStoreModel()
             {
                 Id = schemeId,
                 Requirements = requirements
             };
-
-            #region POC Store
-
-            string json = Json.Serialize(productionBuildStoreModel);
-            ProductionBuildStoreModel deserialized = Json.Deserialize<ProductionBuildStoreModel>(json);
-            ProductionBuild productionbuild = new ProductionBuild()
-            {
-                Id = deserialized.Id,
-                Requirements = deserialized.Requirements
-            };
-            //TODO stack in memory.
-            //TODO stack in backend.
-            Singleton<HideoutClass>.Instance.StartSingleProduction(productionbuild, delegate
-            {
-                produceView.OnStartProducing?.Invoke(produceView.Scheme._id);
-            });
-
-            #endregion POC Store
+            string productionId = Singleton<ProductionService>.Instance.AddToStack(productionBuildStoreModel, areaType);
+            produceView.OnStartProducing?.Invoke(productionId);
         }
 
         [PatchPostfix]
@@ -76,6 +60,8 @@ namespace HideoutAutomation.Patches.View
                     startButton.Interactable = true;
                     startButton.gameObject.SetActive(true);
                 }
+
+                //TODO set ____resultItemIconViewFactory.SetCounterText(); with amount in production. if production produces more than one then multiply.
                 unlockCanvasGroupMethod?.Invoke(null, new object[] { ____viewCanvas, true, false });
             }
             catch (Exception ex)

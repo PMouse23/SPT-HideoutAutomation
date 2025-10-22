@@ -101,6 +101,7 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="Production\ProductionBuild.cs" />
     <Compile Include="Production\ProductionBuildStoreModel.cs" />
+    <Compile Include="Production\ProductionService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

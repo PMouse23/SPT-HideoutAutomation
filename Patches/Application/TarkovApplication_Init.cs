@@ -4,6 +4,7 @@ using EFT.InputSystem;
 using HarmonyLib;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.MonoBehaviours;
+using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
 using System.Reflection;
 
@@ -23,6 +24,10 @@ namespace HideoutAutomation.Patches.Application
             Singleton<UpdateMonoBehaviour>.Create(sptControllerMonoBehaviour);
             if (Globals.Debug)
                 LogHelper.LogInfo($"Created UpdateMonoBehaviour");
+
+            Singleton<ProductionService>.Create(new ProductionService());
+            if (Globals.Debug)
+                LogHelper.LogInfo($"Created ProductionService");
         }
 
         private bool IsTargetMethod(MethodInfo method)
