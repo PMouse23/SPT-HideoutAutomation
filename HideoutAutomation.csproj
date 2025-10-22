@@ -96,7 +96,11 @@
     <Compile Include="Globals.cs" />
     <Compile Include="MonoBehaviours\UpdateMonoBehaviour.cs" />
     <Compile Include="Patches\Application\TarkovApplication_Init.cs" />
+    <Compile Include="Patches\View\HideoutProductionRequirementView_Show.cs" />
+    <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="Production\ProductionBuild.cs" />
+    <Compile Include="Production\ProductionBuildStoreModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

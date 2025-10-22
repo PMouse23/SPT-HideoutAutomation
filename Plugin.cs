@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Patches.Application;
+using HideoutAutomation.Patches.View;
 using System;
 using UnityEngine;
 
@@ -44,6 +45,9 @@ namespace HideoutAutomation
         private void enablePatches()
         {
             new TarkovApplication_Init().Enable();
+
+            new HideoutProductionRequirementView_Show().Enable();
+            new ProduceView_UpdateView().Enable();
         }
 
         private void global_SettingChanged(object sender, EventArgs e)
