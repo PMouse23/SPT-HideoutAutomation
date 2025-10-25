@@ -9,6 +9,7 @@ using SPT.Reflection.Patching;
 using System;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace HideoutAutomation.Patches.View
 {
@@ -31,22 +32,34 @@ namespace HideoutAutomation.Patches.View
 
         private static void OnClick(ProduceView produceView)
         {
-            string schemeId = produceView.Scheme._id;
-            EAreaType areaType = (EAreaType)produceView.Scheme.areaType;
-            Requirement[] requirements = produceView.Scheme.requirements;
+            var scheme = produceView.Scheme;
+            string schemeId = scheme._id;
+            EAreaType areaType = (EAreaType)scheme.areaType;
+            Requirement[] requirements = scheme.requirements;
             ProductionBuildStoreModel productionBuildStoreModel = new ProductionBuildStoreModel()
             {
                 Id = schemeId,
+                AreaType = scheme.areaType,
+                Continuous = scheme.continuous,
+                Count = scheme.count,
+                IsCodeProduction = scheme.isCodeProduction,
+                NeedFuelForAllProductionTime = scheme.needFuelForAllProductionTime,
+                ProductionLimitCount = scheme.productionLimitCount,
+                ProductionTime = scheme.productionTime,
                 Requirements = requirements
             };
             string productionId = Singleton<ProductionService>.Instance.AddToStack(productionBuildStoreModel, areaType);
-            produceView.OnStartProducing?.Invoke(productionId);
+            if (string.IsNullOrWhiteSpace(productionId))
+                produceView.OnStartProducing?.Invoke(productionId);
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification($"productionId: {productionId}");
         }
 
         [PatchPostfix]
         private static void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
+            GameObject ____expectedTimePanel,
             object ____viewCanvas)
         {
             try
@@ -60,7 +73,11 @@ namespace HideoutAutomation.Patches.View
                     startButton.Interactable = true;
                     startButton.gameObject.SetActive(true);
                 }
-
+                GameObject expectedTimePanel = ____expectedTimePanel;
+                if (expectedTimePanel != null)
+                {
+                    expectedTimePanel.SetActive(true);
+                }
                 //TODO set ____resultItemIconViewFactory.SetCounterText(); with amount in production. if production produces more than one then multiply.
                 unlockCanvasGroupMethod?.Invoke(null, new object[] { ____viewCanvas, true, false });
             }

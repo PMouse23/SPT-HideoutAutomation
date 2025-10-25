@@ -96,6 +96,7 @@
     <Compile Include="Globals.cs" />
     <Compile Include="MonoBehaviours\UpdateMonoBehaviour.cs" />
     <Compile Include="Patches\Application\TarkovApplication_Init.cs" />
+    <Compile Include="Patches\Hideout\HideoutClass_SetInventoryController.cs" />
     <Compile Include="Patches\View\HideoutProductionRequirementView_Show.cs" />
     <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
     <Compile Include="Plugin.cs" />
