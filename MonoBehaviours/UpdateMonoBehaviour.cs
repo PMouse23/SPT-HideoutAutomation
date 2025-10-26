@@ -239,7 +239,7 @@ namespace HideoutAutomation.MonoBehaviours
                         string itemName = itemRequirement.ItemName;
                         int count = itemRequirement.BaseCount;
                         int inventory = this.getItemCount(itemRequirement.TemplateId, itemRequirement.IsSpawnedInSession);
-                        if (count > 0 || inventory > 0)
+                        if (count > 0)
                         {
                             itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
                             hasItemRequirements = true;
