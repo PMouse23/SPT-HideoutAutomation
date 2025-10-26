@@ -8,6 +8,7 @@ using SPT.SinglePlayer.Utils.InRaid;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using TMPro;
 using UnityEngine;
@@ -144,7 +145,13 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
-                            this.removeRequirements(data);
+                            var requirements = this.removeRequirements(data);
+                            if (Globals.IsHideoutInProgress)
+                            {
+                                ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
+                                this.hideoutInProgressContribute(data, itemRequirements);
+                                LogHelper.LogInfoWithNotification("Contributed to hideout.");
+                            }
                             switch (status)
                             {
                                 case EAreaStatus.ReadyToConstruct:
@@ -279,6 +286,23 @@ namespace HideoutAutomation.MonoBehaviours
                 || this.lastRemoveTraderRequirements != Globals.RemoveTraderRequirements;
         }
 
+        /// <summary>
+        /// Calls hip Transferbutton.Contribute() function.
+        /// https://github.com/tyfon7/hip/blob/main/src/TransferButton.cs
+        /// </summary>
+        /// <returns></returns>
+        private void hideoutInProgressContribute(AreaData areaData, ItemRequirement[] itemRequirements)
+        {
+            Type? transferButtonType = Globals.HIPTransferButtonType;
+            if (transferButtonType != null)
+            {
+                object transferButton = Activator.CreateInstance(transferButtonType);
+                Globals.HIPItemRequirementsFieldInfo?.SetValue(transferButton, itemRequirements);
+                Globals.HIPAreaDataFieldInfo?.SetValue(transferButton, areaData);
+                Globals.HIPContributeMethodInfo?.Invoke(transferButton, null);
+            }
+        }
+
         private void investigate()
         {
             TimeSpan? dtm = DateTime.Now - this.lastRun;
@@ -368,16 +392,18 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private void removeRequirements(AreaData data)
+        private List<Requirement> removeRequirements(AreaData data)
         {
+            List<Requirement> requirementsToRemove = [];
+            RelatedRequirements requirements = data.NextStage.Requirements;
+
             if (Globals.RemoveAreaRequirements == false
              && Globals.RemoveCurrencyRequirements == false
              && Globals.RemoveItemRequirements == false
              && Globals.RemoveSkillRequirements == false
              && Globals.RemoveTraderRequirements == false)
-                return;
-            List<Requirement> requirementsToRemove = [];
-            RelatedRequirements requirements = data.NextStage.Requirements;
+                return requirements.Data;
+
             foreach (Requirement requirement in requirements)
             {
                 if (Globals.RemoveAreaRequirements && requirement is AreaRequirement areaRequirement)
@@ -398,6 +424,7 @@ namespace HideoutAutomation.MonoBehaviours
                     requirements.Data.Remove(requirement);
                 data.DecideStatus(data.CurrentLevel);
             }
+            return requirements.Data;
         }
 
         private void showDialogWindow(string description, Action acceptAction, Action cancelAction)

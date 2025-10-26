@@ -1,6 +1,8 @@
 ﻿#nullable enable
 
 using BepInEx.Configuration;
+using System;
+using System.Reflection;
 using UnityEngine;
 
 internal static class Globals
@@ -18,4 +20,12 @@ internal static class Globals
     public static KeyboardShortcut ResetDeclinedAreaUpdates = new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl);
     public static double ThresholdCurrencyHandover = 1.5;
     public static bool UseDialogWindow = true;
+
+    #region HideoutInProgress
+    public static FieldInfo? HIPAreaDataFieldInfo;
+    public static MethodInfo? HIPContributeMethodInfo;
+    public static FieldInfo? HIPItemRequirementsFieldInfo;
+    public static Type? HIPTransferButtonType;
+    public static bool IsHideoutInProgress = false;
+    #endregion HideoutInProgress
 }
