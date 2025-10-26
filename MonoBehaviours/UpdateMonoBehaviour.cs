@@ -155,8 +155,8 @@ namespace HideoutAutomation.MonoBehaviours
                                     yield return new WaitForSeconds(1.0f);
                                     this.hideoutInProgressContribute(data, itemRequirements);
                                     foreach (var contribution in contributions)
-                                        LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to hideout.");
-                                    yield return new WaitForSeconds(0.5f);
+                                        LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
+                                    yield return new WaitForSeconds(1.0f);
                                 }
                             }
                             switch (status)
