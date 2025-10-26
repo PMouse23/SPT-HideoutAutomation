@@ -19,6 +19,14 @@ namespace HideoutAutomation.MonoBehaviours
 {
     internal class UpdateMonoBehaviour : MonoBehaviour
     {
+        private static readonly EAreaStatus[] interactableStatuses =
+        [
+            EAreaStatus.LockedToConstruct,
+            EAreaStatus.ReadyToConstruct,
+            EAreaStatus.LockedToUpgrade,
+            EAreaStatus.ReadyToUpgrade
+        ];
+
         private readonly List<EAreaType> declinedAreaUpdates = new List<EAreaType>();
         private CancellationToken? cancellationToken;
         private CancellationTokenSource? cancellationTokenSource;
@@ -146,7 +154,8 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
                             var requirements = this.removeRequirements(data);
-                            if (Globals.IsHideoutInProgress)
+                            if (Globals.IsHideoutInProgress
+                                && interactableStatuses.Contains(status))
                             {
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
                                 var contributions = hideout.method_21(itemRequirements);
