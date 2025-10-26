@@ -149,8 +149,13 @@ namespace HideoutAutomation.MonoBehaviours
                             if (Globals.IsHideoutInProgress)
                             {
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
-                                this.hideoutInProgressContribute(data, itemRequirements);
-                                LogHelper.LogInfoWithNotification("Contributed to hideout.");
+                                var contributions = hideout.method_21(itemRequirements);
+                                if (contributions.Count > 0)
+                                {
+                                    this.hideoutInProgressContribute(data, itemRequirements);
+                                    foreach (var contribution in contributions)
+                                        LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to hideout.");
+                                }
                             }
                             switch (status)
                             {
@@ -235,9 +240,9 @@ namespace HideoutAutomation.MonoBehaviours
                         int inventory = this.getItemCount(itemRequirement.TemplateId, itemRequirement.IsSpawnedInSession);
                         if (count > 0 || inventory > 0)
                         {
-                        itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
-                        hasItemRequirements = true;
-                    }
+                            itemRequirements += $"{Environment.NewLine}{addSpacesAndFixCount(count, 7)} {addSpacesAndFixCount(inventory, 8)} {itemName}";
+                            hasItemRequirements = true;
+                        }
                     }
                     if (requirement is AreaRequirement areaRequirement)
                     {
