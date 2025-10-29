@@ -12,6 +12,7 @@ internal static class Globals
     public static bool AutoUpgrade = true;
     public static bool Debug = false;
     public static KeyboardShortcut InvestigateKeys = new KeyboardShortcut(KeyCode.I, KeyCode.LeftControl);
+    public static bool OnlyContributeWhenAreaRequirementsAreMet = true;
     public static bool RemoveAreaRequirements = false;
     public static bool RemoveCurrencyRequirements = false;
     public static bool RemoveItemRequirements = false;
@@ -20,7 +21,6 @@ internal static class Globals
     public static KeyboardShortcut ResetDeclinedAreaUpdates = new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl);
     public static double ThresholdCurrencyHandover = 1.5;
     public static bool UseDialogWindow = true;
-
     #region HideoutInProgress
     public static FieldInfo? HIPAreaDataFieldInfo;
     public static MethodInfo? HIPContributeMethodInfo;

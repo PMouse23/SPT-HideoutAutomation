@@ -153,19 +153,22 @@ namespace HideoutAutomation.MonoBehaviours
                                 //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
                                 //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
                             }
-                            var requirements = this.removeRequirements(data);
+                            List<Requirement> requirements = this.removeRequirements(data);
                             if (Globals.IsHideoutInProgress
-                                && interactableStatuses.Contains(status))
+                                && interactableStatuses.Contains(status)
+                                && this.hideoutInProgressRequirementsAreMet(requirements))
                             {
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
-                                var contributions = hideout.method_21(itemRequirements);
-                                if (contributions.Count > 0)
+                                foreach (ItemRequirement itemRequirement in itemRequirements)
                                 {
-                                    yield return new WaitForSeconds(1.0f);
-                                    this.hideoutInProgressContribute(data, itemRequirements);
-                                    foreach (var contribution in contributions)
-                                        LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
-                                    yield return new WaitForSeconds(1.0f);
+                                    var contributions = hideout.method_21([itemRequirement]);
+                                    if (contributions.Count > 0)
+                                    {
+                                        this.hideoutInProgressContribute(data, itemRequirements);
+                                        foreach (var contribution in contributions)
+                                            LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
+                                        yield return new WaitForSeconds(0.5f);
+                                    }
                                 }
                             }
                             switch (status)
@@ -320,6 +323,13 @@ namespace HideoutAutomation.MonoBehaviours
                 Globals.HIPAreaDataFieldInfo?.SetValue(transferButton, areaData);
                 Globals.HIPContributeMethodInfo?.Invoke(transferButton, null);
             }
+        }
+
+        private bool hideoutInProgressRequirementsAreMet(List<Requirement> requirements)
+        {
+            if (Globals.OnlyContributeWhenAreaRequirementsAreMet == false)
+                return true;
+            return requirements.OfType<AreaRequirement>().Any(r => r.Fulfilled == false) == false;
         }
 
         private void investigate()

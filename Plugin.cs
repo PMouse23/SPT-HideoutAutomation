@@ -16,6 +16,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<bool> onlyContributeWhenAreaRequirementsAreMet;
         private ConfigEntry<bool> removeAreaRequirements;
         private ConfigEntry<bool> removeCurrencyRequirements;
         private ConfigEntry<bool> removeItemRequirements;
@@ -89,6 +90,9 @@ namespace HideoutAutomation
             this.removeTraderRequirements = this.Config.Bind("Payment", "RemoveTraderRequirements", false, "Remove the trader requirements for construction and upgrades.");
             this.removeTraderRequirements.SettingChanged += this.global_SettingChanged;
 
+            this.onlyContributeWhenAreaRequirementsAreMet = this.Config.Bind("HideoutInProgress", "OnlyContributeWhenAreaRequirementsAreMet", true, "(HIP mod support) Only contribute when area requirements are met.");
+            this.onlyContributeWhenAreaRequirementsAreMet.SettingChanged += this.global_SettingChanged;
+
             this.setGlobalSettings();
         }
 
@@ -106,6 +110,7 @@ namespace HideoutAutomation
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
+            Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
         }
     }
 }
