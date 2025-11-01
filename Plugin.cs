@@ -16,12 +16,13 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<bool> enableHideoutInProgressSupport;
+        private ConfigEntry<bool> onlyContributeWhenAreaRequirementsAreMet;
         private ConfigEntry<bool> removeAreaRequirements;
         private ConfigEntry<bool> removeCurrencyRequirements;
         private ConfigEntry<bool> removeItemRequirements;
         private ConfigEntry<bool> removeSkillRequirements;
         private ConfigEntry<bool> removeTraderRequirements;
-
         private ConfigEntry<KeyboardShortcut> resetDeclinedAreaUpdates;
         private ConfigEntry<double> thresholdCurrencyHandover;
         private ConfigEntry<bool> useDialogWindow;
@@ -89,6 +90,12 @@ namespace HideoutAutomation
             this.removeTraderRequirements = this.Config.Bind("Payment", "RemoveTraderRequirements", false, "Remove the trader requirements for construction and upgrades.");
             this.removeTraderRequirements.SettingChanged += this.global_SettingChanged;
 
+            this.enableHideoutInProgressSupport = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressSupport", true, "Experimental (HIP mod support). Disable when problems occur.");
+            this.enableHideoutInProgressSupport.SettingChanged += this.global_SettingChanged;
+
+            this.onlyContributeWhenAreaRequirementsAreMet = this.Config.Bind("HideoutInProgress", "OnlyContributeWhenAreaRequirementsAreMet", true, "(HIP mod support) Only contribute when area requirements are met.");
+            this.onlyContributeWhenAreaRequirementsAreMet.SettingChanged += this.global_SettingChanged;
+
             this.setGlobalSettings();
         }
 
@@ -106,6 +113,8 @@ namespace HideoutAutomation
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
+            Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
+            Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
         }
     }
 }
