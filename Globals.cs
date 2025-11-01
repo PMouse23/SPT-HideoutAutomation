@@ -12,6 +12,7 @@ internal static class Globals
     public static bool AutoUpgrade = true;
     public static bool Debug = false;
     public static KeyboardShortcut InvestigateKeys = new KeyboardShortcut(KeyCode.I, KeyCode.LeftControl);
+    public static bool IsHideoutInProgressSupportEnabled = true;
     public static bool OnlyContributeWhenAreaRequirementsAreMet = true;
     public static bool RemoveAreaRequirements = false;
     public static bool RemoveCurrencyRequirements = false;

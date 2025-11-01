@@ -155,6 +155,7 @@ namespace HideoutAutomation.MonoBehaviours
                             }
                             List<Requirement> requirements = this.removeRequirements(data);
                             if (Globals.IsHideoutInProgress
+                                && Globals.IsHideoutInProgressSupportEnabled
                                 && interactableStatuses.Contains(status)
                                 && this.hideoutInProgressRequirementsAreMet(requirements))
                             {
