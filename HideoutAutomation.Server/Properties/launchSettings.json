@@ -6,7 +6,13 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:23569;http://localhost:23570"
+      "applicationUrl": ""
+    },
+    "SPT.Server.exe": {
+      "commandName": "Executable",
+      "executablePath": "D:\\Offline\\SPT\\SPT.Server.exe",
+      "workingDirectory": "D:\\Offline\\SPT",
+      "nativeDebugging": false
     }
   }
 }
