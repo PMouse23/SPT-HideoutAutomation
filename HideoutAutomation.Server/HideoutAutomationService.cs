@@ -26,7 +26,7 @@ namespace HideoutAutomation.Server
         EventOutputHolder eventOutputHolder
         )
     {
-        private HideoutSingleProductionStartRequestData last;
+        private HideoutSingleProductionStartRequestData? last;
 
         public void Log(string data)
         {
@@ -85,6 +85,8 @@ namespace HideoutAutomation.Server
 
         public void StartProducing(PmcData pmcData, MongoId sessionID)
         {
+            if (this.last == null)
+                return;
             hideoutController.SingleProductionStart(pmcData, this.last, sessionID);
         }
     }
