@@ -18,7 +18,6 @@ namespace HideoutAutomation.Server.Patches
             bool result = true;
             if (ServiceLocator.ServiceProvider.GetService<HideoutAutomationService>() is HideoutAutomationService automationService)
             {
-                automationService.SetLast(request);
                 //    result = await callback.MakePreservation(sessionId, new Models.ProductionPreservationRequestData()
                 //    {
                 //        Area = HideoutAreas.Workbench,
