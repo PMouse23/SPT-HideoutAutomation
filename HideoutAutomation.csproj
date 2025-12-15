@@ -35,6 +35,16 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Comfort.Unity">
+      <HintPath>Libraries\EscapeFromTarkov_Data\Managed\Comfort.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="CommonExtensions">
+      <HintPath>Libraries\EscapeFromTarkov_Data\Managed\CommonExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\SPT-HideoutAutomation-Clone\Libraries\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
@@ -98,7 +108,14 @@
     <Compile Include="Helpers\ReflectionHelper.cs" />
     <Compile Include="MonoBehaviours\UpdateMonoBehaviour.cs" />
     <Compile Include="Patches\Application\TarkovApplication_Init.cs" />
+    <Compile Include="Patches\Hideout\HideoutClass_SetInventoryController.cs" />
+    <Compile Include="Patches\View\HideoutProductionRequirementView_Show.cs" />
+    <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="Production\ProductionBuild.cs" />
+    <Compile Include="Production\ProductionBuildStoreModel.cs" />
+    <Compile Include="Production\ProductionService.cs" />
+    <Compile Include="Production\Requests\ProductionCountRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
@@ -109,7 +126,7 @@
       taskkill /F /IM EscapeFromTarkov.exe
       ping -n  2 127.0.0.1 &gt;NUL
       )
-    </PreBuildEvent>
+</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "D:\Offline\BepInEx\plugins\$(TargetName).dll"
