@@ -32,19 +32,26 @@ namespace HideoutAutomation.Patches.View
 
         private static async void OnClick(ProduceView produceView)
         {
-            var scheme = produceView.Scheme;
-            string schemeId = scheme._id;
-            scheme.productionTime = (float)produceView.Producer.CalculateProductionTime(scheme);
-            if (Globals.Debug)
-                LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
-            EAreaType areaType = (EAreaType)scheme.areaType;
-            int inProduction = await Singleton<ProductionService>.Instance.GetCountInProduction(schemeId, areaType);
-            TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
+            try
             {
-                if (inProduction == 0)
-                    produceView.OnStartProducing?.Invoke(schemeId);
-            }));
-            produceView.UpdateView();
+                var scheme = produceView.Scheme;
+                string schemeId = scheme._id;
+                scheme.productionTime = (float)produceView.Producer.CalculateProductionTime(scheme);
+                if (Globals.Debug)
+                    LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
+                EAreaType areaType = (EAreaType)scheme.areaType;
+                int inProduction = await Singleton<ProductionService>.Instance.GetCountInProduction(schemeId, areaType);
+                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
+                {
+                    if (inProduction == 0)
+                        produceView.OnStartProducing?.Invoke(schemeId);
+                }));
+                produceView.UpdateView();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.LogExceptionToConsole(ex);
+            }
         }
 
         [PatchPostfix]
@@ -61,7 +68,9 @@ namespace HideoutAutomation.Patches.View
                     return;
                 var scheme = produceView.Scheme;
 
-                bool showStart = produceView.Producer.CanStart || !produceView.Producer.CanStartScheme(scheme);
+                bool canStart = produceView.Boolean_0
+                    && (produceView.Producer.CanStart
+                    || !produceView.Producer.CanStartScheme(scheme));
 
                 string schemeId = scheme._id;
                 EAreaType areaType = (EAreaType)scheme.areaType;
@@ -72,8 +81,8 @@ namespace HideoutAutomation.Patches.View
                     startButton.SetHeaderText($"Stack ({stacked})");
                     startButton.OnClick.RemoveAllListeners();
                     startButton.OnClick.AddListener(() => { OnClick(produceView); });
-                    startButton.Interactable = produceView.Boolean_0;
-                    startButton.gameObject.SetActive(showStart);
+                    startButton.Interactable = canStart;
+                    startButton.gameObject.SetActive(true);
                 }
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
