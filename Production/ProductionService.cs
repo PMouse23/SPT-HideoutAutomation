@@ -59,22 +59,6 @@ namespace HideoutAutomation.Production
             //ProductionBuildStoreModel deserialized = Json.Deserialize<ProductionBuildStoreModel>(json);
         }
 
-        public async Task<int> GetCountInProduction(string productionId, EAreaType areaType)
-        {
-            ProductionCountRequest productionCountRequest = new ProductionCountRequest()
-            {
-                area = areaType,
-                recipeId = productionId
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/ProductionCount", JsonConvert.SerializeObject(productionCountRequest));
-            return JsonConvert.DeserializeObject<int>(response);
-            //bool isProducing = this.currentlyProducing.TryGetValue(areaType, out ProductionBuild productionbuild);
-            //if (this.ProductionStack.ContainsKey(areaType) == false)
-            //    return 0;
-            //return this.ProductionStack[areaType].Where(p => p.Id == productionId).Sum(p => p.Count)
-            //    + (isProducing ? productionbuild.Count : 0);
-        }
-
         public int GetCountStack(string productionId, EAreaType areaType)
         {
             if (this.ProductionStack.ContainsKey(areaType) == false)
@@ -87,6 +71,27 @@ namespace HideoutAutomation.Production
             if (this.ProductionStack.ContainsKey(areaType) == false)
                 this.ProductionStack.Add(areaType, new Stack<ProductionBuildStoreModel>());
             return this.ProductionStack[areaType].Pop();
+        }
+
+        public async Task<int> GetStackCount(string productionId, EAreaType areaType)
+        {
+            ProductionCountRequest productionCountRequest = new ProductionCountRequest()
+            {
+                area = areaType,
+                recipeId = productionId
+            };
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StackCount", JsonConvert.SerializeObject(productionCountRequest));
+            return JsonConvert.DeserializeObject<int>(response);
+        }
+
+        public int ResultCount()
+        {
+            //bool isProducing = this.currentlyProducing.TryGetValue(areaType, out ProductionBuild productionbuild);
+            //if (this.ProductionStack.ContainsKey(areaType) == false)
+            //    return 0;
+            //return this.ProductionStack[areaType].Where(p => p.Id == productionId).Sum(p => p.Count)
+            //    + (isProducing ? productionbuild.Count : 0);
+            return 0;
         }
 
         public string StartProduction(EAreaType areaType)

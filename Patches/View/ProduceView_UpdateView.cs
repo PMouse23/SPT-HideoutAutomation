@@ -40,7 +40,7 @@ namespace HideoutAutomation.Patches.View
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
-                int inProduction = await Singleton<ProductionService>.Instance.GetCountInProduction(schemeId, areaType);
+                int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
                 {
                     if (inProduction == 0)
@@ -87,7 +87,7 @@ namespace HideoutAutomation.Patches.View
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
                 {
-                    int inProduction = await Singleton<ProductionService>.Instance.GetCountInProduction(schemeId, areaType);
+                    int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                     if (inProduction > 0)
                         resultItemIconViewFactory.SetCounterText(inProduction.ToString());
                 }
