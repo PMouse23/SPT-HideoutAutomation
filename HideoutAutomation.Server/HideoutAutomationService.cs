@@ -89,7 +89,7 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(true);
         }
 
-        public ValueTask<int> ProductionCount(MongoId sessionId, ProductionCountRequestData requestData)
+        public ValueTask<int> StackCount(MongoId sessionId, ProductionCountRequestData requestData)
         {
             HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
             if (data == null)
