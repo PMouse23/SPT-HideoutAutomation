@@ -1,4 +1,7 @@
-﻿using HarmonyLib;
+﻿using Comfort.Common;
+using HarmonyLib;
+using HideoutAutomation.Helpers;
+using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
 using System.Reflection;
 
@@ -14,11 +17,11 @@ namespace HideoutAutomation.Patches.Hideout
         [PatchPostfix]
         private static void PatchPostfix(HideoutClass __instance)
         {
-            //if (Singleton<ProductionService>.Instance != null)
-            //    return;
-            //Singleton<ProductionService>.Create(new ProductionService());
-            //if (Globals.Debug)
-            //    LogHelper.LogInfo($"Created ProductionService");
+            if (Singleton<ProductionService>.Instance != null)
+                return;
+            Singleton<ProductionService>.Create(new ProductionService());
+            if (Globals.Debug)
+                LogHelper.LogInfo($"Created ProductionService");
         }
 
         private bool IsTargetMethod(MethodInfo method)
