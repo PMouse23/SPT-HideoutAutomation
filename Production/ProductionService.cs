@@ -13,7 +13,7 @@ namespace HideoutAutomation.Production
     {
         public ProductionService()
         {
-            Singleton<HideoutClass>.Instance.ProductionController.OnProductionComplete += (obj) =>
+            Singleton<HideoutClass>.Instance.ProductionController.OnProductionComplete += async (obj) =>
             {
                 try
                 {
@@ -22,8 +22,10 @@ namespace HideoutAutomation.Production
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} completed producing {completedSchemeId}.");
+
                     bool showItemsListWindow = false;
-                    Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow);
+                    if(await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
+                        producer.GetItems(completedSchemeId);
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                 }
