@@ -45,8 +45,8 @@ namespace HideoutAutomation.Patches.View
                 {
                     if (inProduction == 0)
                         produceView.OnStartProducing?.Invoke(schemeId);
+                    produceView.UpdateView();
                 }));
-                produceView.UpdateView();
             }
             catch (Exception ex)
             {
@@ -74,7 +74,7 @@ namespace HideoutAutomation.Patches.View
 
                 string schemeId = scheme._id;
                 EAreaType areaType = (EAreaType)scheme.areaType;
-                int stacked = 0; // Singleton<ProductionService>.Instance.GetCountStack(schemeId, areaType);
+                int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
                 {
@@ -89,7 +89,7 @@ namespace HideoutAutomation.Patches.View
                 {
                     int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                     if (inProduction > 0)
-                        resultItemIconViewFactory.SetCounterText(inProduction.ToString());
+                        resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
                 }
                 unlockCanvasGroupMethod?.Invoke(null, new object[] { ____viewCanvas, true, false });
             }
