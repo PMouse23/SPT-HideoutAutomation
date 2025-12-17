@@ -118,7 +118,7 @@ namespace HideoutAutomation.Server
 
         public bool ShouldStack(MongoId sessionId, PmcData pmcData, HideoutSingleProductionStartRequestData requestData)
         {
-            HideoutAreas? area = this.getHideoutArea(sessionId);
+            HideoutAreas? area = this.getHideoutArea(requestData.RecipeId);
             if (area == null)
                 return false;
             IEnumerable<Production?> productions = this.getAreaProductions(pmcData, area.Value);
