@@ -18,7 +18,7 @@ namespace HideoutAutomation.Server.Patches
             if (ServiceLocator.ServiceProvider.GetService<HideoutAutomationService>() is HideoutAutomationService automationService)
             {
                 automationService.Log($"HideoutAutomation: HideoutTakeProduction");
-                //automationService.StartProducing(pmcData, sessionID);
+                automationService.ProduceNext(sessionID, pmcData, request);
             }
         }
 
