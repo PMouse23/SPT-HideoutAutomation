@@ -10,6 +10,7 @@ namespace HideoutAutomation.Server
     {
         Task IOnLoad.OnLoad()
         {
+            new GameStart().Enable();
             new HideoutTakeProduction().Enable();
             new SingleProductionStart().Enable();
 
