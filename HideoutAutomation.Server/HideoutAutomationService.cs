@@ -24,6 +24,18 @@ namespace HideoutAutomation.Server
         HideoutController hideoutController
         )
     {
+        public ValueTask<int> AreaCount(MongoId sessionId, AreaCountRequestData requestData)
+        {
+            HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
+            if (data == null)
+                return ValueTask.FromResult(0);
+            int count = 0;
+            HideoutAreas area = requestData.Area;
+            if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? value))
+                count = value.Count();
+            return ValueTask.FromResult(count);
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
