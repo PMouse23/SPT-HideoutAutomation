@@ -9,8 +9,5 @@ namespace HideoutAutomation.Server.Models
     {
         [JsonPropertyName("areaProductions")]
         public Dictionary<HideoutAreas, Stack<HideoutSingleProductionStartRequestData>> AreaProductions { get; set; } = [];
-
-        [JsonPropertyName("areaRecipePreservations")]
-        public Dictionary<HideoutAreas, List<RecipePreservation>> AreaRecipePreservations { get; set; } = [];
     }
 }
