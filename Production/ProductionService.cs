@@ -22,18 +22,29 @@ namespace HideoutAutomation.Production
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} completed producing {completedSchemeId}.");
-
                     bool showItemsListWindow = false;
-                    if(await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
+                    if (await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
                         producer.GetItems(completedSchemeId);
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
+                    int count = await this.GetStackCount(completedSchemeId, areaType); //TODO areaCount;
+                    if (count > 0)
+                    {
+                        ProductionBuild next = await this.StartFromStack(areaType);
+                        producer.StartProducing(next);
+                    }
                 }
                 catch (Exception ex)
                 {
                     LogHelper.LogExceptionToConsole(ex);
                 }
             };
+        }
+
+        public async Task<int> GetAreaCount(EAreaType areaType)
+        {
+            //TODO areaCount;
+            throw new NotImplementedException();
         }
 
         public async Task<int> GetStackCount(string productionId, EAreaType areaType)
@@ -47,14 +58,14 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<int>(response);
         }
 
-        public int ResultCount()
+        public async Task<ProductionBuild> StartFromStack(EAreaType areaType)
         {
-            //bool isProducing = this.currentlyProducing.TryGetValue(areaType, out ProductionBuild productionbuild);
-            //if (this.ProductionStack.ContainsKey(areaType) == false)
-            //    return 0;
-            //return this.ProductionStack[areaType].Where(p => p.Id == productionId).Sum(p => p.Count)
-            //    + (isProducing ? productionbuild.Count : 0);
-            return 0;
+            NextProductionRequest nextProductionRequest = new NextProductionRequest()
+            {
+                area = areaType,
+            };
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StartFromStack", JsonConvert.SerializeObject(nextProductionRequest));
+            return JsonConvert.DeserializeObject<ProductionBuild>(response);
         }
     }
 }
