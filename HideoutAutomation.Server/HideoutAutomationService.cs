@@ -42,9 +42,9 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(count);
         }
 
-        public IEnumerable<Production?> getAreaProductions(PmcData pmcData, HideoutAreas area)
+        public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
-            return pmcData.Hideout?.Production?.Values?.Where(prod => prod != null && this.getHideoutArea(prod.RecipeId) == area) ?? [];
+            return ValueTask.FromResult(this.getHideoutProduction(recipeId));
         }
 
         public void Log(string data)
@@ -97,45 +97,44 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(true);
         }
 
-        public bool ProduceNext(MongoId sessionId, PmcData pmcData, HideoutTakeProductionRequestData requestData)
+        public void ProduceNext(MongoId sessionId, PmcData pmcData, HideoutTakeProductionRequestData requestData)
         {
             if (pmcData.Id is not MongoId profileId)
-                return false;
+                return;
             HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
             if (data == null)
-                return false;
+                return;
             HideoutAreas? area = this.getHideoutArea(requestData.RecipeId);
             if (area == null)
-                return false;
+                return;
             if (data.AreaProductions.TryGetValue(area.Value, out Stack<HideoutSingleProductionStartRequestData>? values) == false)
-                return false;
+                return;
             if (values.Count == 0)
-                return false;
-            bool result = this.ProduceNext(sessionId, pmcData, profileId, values);
-            return result;
+                return;
+            this.ProduceNext(sessionId, pmcData, profileId, values);
         }
 
-        public bool ProduceNext(MongoId sessionId, PmcData pmcData, HideoutAreas area)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, HideoutAreas area)
         {
             if (pmcData.Id is not MongoId profileId)
-                return false;
+                return null;
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
-                return false;
+                return null;
             if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? values) == false)
-                return false;
+                return null;
             if (values.Count == 0)
-                return false;
-            bool result = this.ProduceNext(sessionId, pmcData, profileId, values);
-            return result;
+                return null;
+            MongoId recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
+            return recipeId;
         }
 
-        public bool ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
+        public MongoId ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Pop();
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
-            return true;
+            return startRequestData.RecipeId;
         }
 
         public bool ShouldStack(MongoId sessionId, PmcData pmcData, HideoutSingleProductionStartRequestData requestData)
@@ -202,6 +201,20 @@ namespace HideoutAutomation.Server
             }
         }
 
+        public ValueTask<HideoutProduction?> StartFromStack(MongoId sessionId, NextProductionRequestData requestData)
+        {
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return default;
+            HideoutAreas area = requestData.Area;
+            if (this.areaIsProducing(pmcData, area))
+                return default;
+            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, area);
+            if (recipeId == null)
+                return default;
+            return this.GetHideoutProduction(recipeId.Value);
+        }
+
         private bool areaIsProducing(PmcData pmcData, HideoutAreas area)
         {
             IEnumerable<Production?> productions = this.getAreaProductions(pmcData, area);
@@ -210,9 +223,14 @@ namespace HideoutAutomation.Server
             return false;
         }
 
+        private IEnumerable<Production?> getAreaProductions(PmcData pmcData, HideoutAreas area)
+        {
+            return pmcData.Hideout?.Production?.Values?.Where(prod => prod != null && this.getHideoutArea(prod.RecipeId) == area) ?? [];
+        }
+
         private HideoutAreas? getHideoutArea(MongoId recipeId)
         {
-            return databaseService.GetHideout().Production.Recipes?.FirstOrDefault(prod => prod.Id == recipeId)?.AreaType;
+            return this.getHideoutProduction(recipeId)?.AreaType;
         }
 
         private HideoutAutomationData? GetHideoutAutomationData(PmcData pmcData)
@@ -229,6 +247,11 @@ namespace HideoutAutomation.Server
             if (pmcData == null)
                 return null;
             return this.GetHideoutAutomationData(pmcData);
+        }
+
+        private HideoutProduction? getHideoutProduction(MongoId recipeId)
+        {
+            return databaseService.GetHideout().Production.Recipes?.FirstOrDefault(prod => prod.Id == recipeId);
         }
     }
 }

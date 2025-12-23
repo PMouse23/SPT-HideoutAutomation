@@ -18,13 +18,6 @@ namespace HideoutAutomation.Server.Patches
             bool result = true;
             if (ServiceLocator.ServiceProvider.GetService<HideoutAutomationService>() is HideoutAutomationService automationService)
             {
-                //result = await callback.MakePreservation(sessionId, new Models.ProductionPreservationRequestData()
-                //{
-                //  Area = HideoutAreas.Workbench,
-                //  RecipeId = request.RecipeId,
-                //  Items = request.Items,
-                //  Tools = request.Tools
-                //});
                 bool shouldStack = automationService.ShouldStack(sessionID, pmcData, request);
                 if (shouldStack)
                 {
@@ -33,7 +26,6 @@ namespace HideoutAutomation.Server.Patches
                     automationService.Stack(sessionID, request);
                     result = false;
                 }
-                automationService.Log($"HideoutAutomation: SingleProductionStart");
             }
             return result;
         }

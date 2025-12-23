@@ -11,7 +11,9 @@ namespace HideoutAutomation.Server
         new RouteAction<ProductionCountRequestData>("/hideoutautomation/StackCount",
                  async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.StackCount(sessionId, requestData))!),
         new RouteAction<HideoutSingleProductionStartRequestData>("/hideoutautomation/Stack",
-                 async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.Stack(sessionId, requestData))!)
+                 async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.Stack(sessionId, requestData))!),
+        new RouteAction<NextProductionRequestData>("/hideoutautomation/StartFromStack",
+                 async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.StartFromStack(sessionId, requestData))!)
         ])
     {
     }
