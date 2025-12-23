@@ -27,7 +27,7 @@ namespace HideoutAutomation.Production
                         producer.GetItems(completedSchemeId);
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
-                    int count = await this.GetStackCount(completedSchemeId, areaType); //TODO areaCount;
+                    int count = await this.GetAreaCount(areaType);
                     if (count > 0)
                     {
                         ProductionBuild next = await this.StartFromStack(areaType);
@@ -43,8 +43,12 @@ namespace HideoutAutomation.Production
 
         public async Task<int> GetAreaCount(EAreaType areaType)
         {
-            //TODO areaCount;
-            throw new NotImplementedException();
+            AreaCountRequest productionCountRequest = new AreaCountRequest()
+            {
+                area = areaType
+            };
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/AreaCount", JsonConvert.SerializeObject(productionCountRequest));
+            return JsonConvert.DeserializeObject<int>(response);
         }
 
         public async Task<int> GetStackCount(string productionId, EAreaType areaType)
