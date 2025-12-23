@@ -21,16 +21,19 @@ namespace HideoutAutomation.Production
                     EAreaType areaType = producer.AreaType;
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
                     if (Globals.Debug)
-                        LogHelper.LogInfoWithNotification($"{areaType} completed producing {completedSchemeId}.");
+                        LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
                     if (await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
                         producer.GetItems(completedSchemeId);
-                    if (Globals.Debug)
-                        LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
+
                     int count = await this.GetAreaCount(areaType);
                     if (count > 0)
                     {
+                        if (Globals.Debug)
+                            LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
                         ProductionBuild next = await this.StartFromStack(areaType);
+                        if (Globals.Debug)
+                            LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
                         producer.StartProducing(next);
                     }
                 }
