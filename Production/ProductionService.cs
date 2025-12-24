@@ -58,9 +58,16 @@ namespace HideoutAutomation.Production
 
         public async Task<int> GetAreaCount(EAreaType areaType)
         {
+            bool includeCurrentProduction = false;
+            return await this.GetAreaCount(areaType, includeCurrentProduction);
+        }
+
+        public async Task<int> GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
+        {
             AreaCountRequest productionCountRequest = new AreaCountRequest()
             {
-                area = areaType
+                area = areaType,
+                includeCurrentProduction = includeCurrentProduction
             };
             string response = await RequestHandler.PutJsonAsync("/hideoutautomation/AreaCount", JsonConvert.SerializeObject(productionCountRequest));
             return JsonConvert.DeserializeObject<int>(response);

@@ -3,6 +3,7 @@ using EFT;
 using EFT.Hideout;
 using EFT.UI;
 using HarmonyLib;
+using HideoutAutomation.Extensions;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
@@ -40,12 +41,17 @@ namespace HideoutAutomation.Patches.View
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
-                int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+                bool includeCurrentProduction = true;
+                int inProductionArea = await Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
+                int inStackRecipe = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
                 {
-                    if (inProduction == 0)
+                    if (Globals.Debug)
+                        LogHelper.LogInfoWithNotification($"inProductionArea: {inProductionArea}, inStackRecipe: {inStackRecipe}");
+                    if (inProductionArea == 0)
                         produceView.OnStartProducing?.Invoke(schemeId);
-                    produceView.UpdateView();
+                    if (inProductionArea > 0)
+                        produceView.UpdateStackButton(inStackRecipe + 1);
                 }));
             }
             catch (Exception ex)
