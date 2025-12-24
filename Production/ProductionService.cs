@@ -1,16 +1,20 @@
 ﻿using Comfort.Common;
 using EFT;
+using EFT.Hideout;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production.Requests;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace HideoutAutomation.Production
 {
     internal class ProductionService
     {
+        private readonly List<ProduceView> produceViews = [];
+
         public ProductionService()
         {
             Singleton<HideoutClass>.Instance.ProductionController.OnProductionComplete += async (obj) =>
@@ -36,12 +40,20 @@ namespace HideoutAutomation.Production
                             LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
                         producer.StartProducing(next);
                     }
+
+                    foreach (ProduceView produceView in produceViews)
+                        produceView.UpdateView();
                 }
                 catch (Exception ex)
                 {
                     LogHelper.LogExceptionToConsole(ex);
                 }
             };
+        }
+
+        public void AddProduceView(ProduceView produceView)
+        {
+            this.produceViews.Add(produceView);
         }
 
         public async Task<int> GetAreaCount(EAreaType areaType)
@@ -63,6 +75,11 @@ namespace HideoutAutomation.Production
             };
             string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StackCount", JsonConvert.SerializeObject(productionCountRequest));
             return JsonConvert.DeserializeObject<int>(response);
+        }
+
+        public void RemoveProduceView(ProduceView produceView)
+        {
+            this.produceViews.Remove(produceView);
         }
 
         public async Task<ProductionBuild> StartFromStack(EAreaType areaType)

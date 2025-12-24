@@ -51,6 +51,8 @@ namespace HideoutAutomation
             new HideoutClass_SetInventoryController().Enable();
 
             new HideoutProductionRequirementView_Show().Enable();
+            new ProduceView_Close().Enable();
+            new ProduceView_Show().Enable();
             new ProduceView_UpdateView().Enable();
         }
 
