@@ -32,9 +32,9 @@ namespace HideoutAutomation.Server
             int count = 0;
             HideoutAreas area = requestData.Area;
             if (requestData.IncludeCurrentProduction && this.areaIsProducing(sessionId, area))
-                count = count + 1;
+                count = 1;
             if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? value))
-                count = value.Count();
+                count = count + value.Count();
             return ValueTask.FromResult(count);
         }
 
