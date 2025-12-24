@@ -31,6 +31,8 @@ namespace HideoutAutomation.Server
                 return ValueTask.FromResult(0);
             int count = 0;
             HideoutAreas area = requestData.Area;
+            if (requestData.IncludeCurrentProduction && this.areaIsProducing(sessionId, area))
+                count = count + 1;
             if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? value))
                 count = value.Count();
             return ValueTask.FromResult(count);
@@ -140,6 +142,14 @@ namespace HideoutAutomation.Server
             if (recipeId == null)
                 return default;
             return this.GetHideoutProduction(recipeId.Value);
+        }
+
+        private bool areaIsProducing(MongoId sessionId, HideoutAreas area)
+        {
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return false;
+            return this.areaIsProducing(pmcData, area);
         }
 
         private bool areaIsProducing(PmcData pmcData, HideoutAreas area)
