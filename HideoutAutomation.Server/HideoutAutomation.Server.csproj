@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;if $(ConfigurationName) == Debug (&#xD;&#xA;      copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).pdb&quot;&#xD;&#xA;) else (&#xD;&#xA;      del &quot;D:\Offline\BepInEx\plugins\$(TargetName).pdb&quot;&#xD;&#xA;)" />
+    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;if $(ConfigurationName) == Debug (&#xD;&#xA;      copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).pdb&quot;&#xD;&#xA;) else (&#xD;&#xA;      copy &quot;$(TargetPath)&quot; &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;)" />
   </Target>
 
 </Project>

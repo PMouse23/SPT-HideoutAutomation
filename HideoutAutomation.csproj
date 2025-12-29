@@ -139,7 +139,7 @@
 if $(ConfigurationName) == Debug (
       copy "$(TargetDir)$(TargetName).pdb" "D:\Offline\BepInEx\plugins\$(TargetName).pdb"
 ) else (
-      del "D:\Offline\BepInEx\plugins\$(TargetName).pdb"
+      copy "$(TargetPath)" "D:\SOURCE\KnotScripts\Releases\HideoutAutomation\BepInEx\plugins\$(TargetName).dll"
 )
 </PostBuildEvent>
   </PropertyGroup>
