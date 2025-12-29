@@ -1,6 +1,7 @@
 ﻿using Comfort.Common;
 using EFT;
 using EFT.Hideout;
+using EFT.InventoryLogic;
 using EFT.UI;
 using HarmonyLib;
 using HideoutAutomation.Extensions;
@@ -8,6 +9,7 @@ using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -31,6 +33,29 @@ namespace HideoutAutomation.Patches.View
             return AccessTools.FirstMethod(typeof(ProduceView), this.IsTargetMethod);
         }
 
+        private static bool checkRequirementsWithoutTools(Requirement[] requirements)
+        {
+            IEnumerable<Item> allStashItems = Singleton<HideoutClass>.Instance.AllStashItems;
+            foreach (Requirement requirement in requirements)
+            {
+                if (requirement is ToolRequirement)
+                    continue;
+                else if (requirement is ItemRequirement itemRequirement)
+                {
+                    itemRequirement.Test(allStashItems);
+                    if (itemRequirement.Fulfilled == false)
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool IsProducingThisScheme(ProduceView produceView, string schemeId)
+        {
+            bool isProducingThisScheme = produceView.Producer.ProducingItems.ContainsKey(schemeId);
+            return isProducingThisScheme;
+        }
+
         private static async void OnClick(ProduceView produceView)
         {
             try
@@ -44,6 +69,9 @@ namespace HideoutAutomation.Patches.View
                 bool includeCurrentProduction = true;
                 int inProductionArea = await Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
                 int inStackRecipe = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+                bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
+                if (isProducingThisScheme)
+                    scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
                 {
                     if (Globals.Debug)
@@ -72,14 +100,19 @@ namespace HideoutAutomation.Patches.View
                 ProduceView produceView = __instance;
                 if (produceView == null)
                     return;
+
                 var scheme = produceView.Scheme;
+                string schemeId = scheme._id;
+                EAreaType areaType = (EAreaType)scheme.areaType;
 
                 bool canStart = produceView.Boolean_0
                     && (produceView.Producer.CanStart
                     || !produceView.Producer.CanStartScheme(scheme));
 
-                string schemeId = scheme._id;
-                EAreaType areaType = (EAreaType)scheme.areaType;
+                bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
+                if (canStart == false && isProducingThisScheme)
+                    canStart = checkRequirementsWithoutTools(scheme.requirements);
+
                 int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
