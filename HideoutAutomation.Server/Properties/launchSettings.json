@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "HideoutAutomation.Server": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": ""
+    },
+    "SPT.Server.exe": {
+      "commandName": "Executable",
+      "executablePath": "D:\\Offline\\SPT\\SPT.Server.exe",
+      "workingDirectory": "D:\\Offline\\SPT",
+      "nativeDebugging": false
+    }
+  }
+}
