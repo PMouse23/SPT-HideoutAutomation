@@ -21,6 +21,11 @@ namespace HideoutAutomation.Production
             {
                 try
                 {
+                    if (RaidHelper.HasRaidLoaded())
+                    {
+                        Singleton<ProductionService>.Instance = null;
+                        return;
+                    }
                     var producer = obj;
                     EAreaType areaType = producer.AreaType;
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
