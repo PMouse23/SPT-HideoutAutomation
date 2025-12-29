@@ -6,10 +6,10 @@ namespace HideoutAutomation.Server.Models
 {
     public class AreaCountRequestData : IRequestData
     {
-        [JsonPropertyName("includeCurrentProduction")]
-        public bool IncludeCurrentProduction;
-
         [JsonPropertyName("area")]
         public HideoutAreas Area { get; set; }
+
+        [JsonPropertyName("includeCurrentProduction")]
+        public bool IncludeCurrentProduction { get; set; }
     }
 }
