@@ -106,6 +106,7 @@
     <Compile Include="Helpers\LogHelper.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Helpers\ModChecker.cs" />
+    <Compile Include="Helpers\RaidHelper.cs" />
     <Compile Include="Helpers\ReflectionHelper.cs" />
     <Compile Include="MonoBehaviours\UpdateMonoBehaviour.cs" />
     <Compile Include="Patches\Application\TarkovApplication_Init.cs" />
