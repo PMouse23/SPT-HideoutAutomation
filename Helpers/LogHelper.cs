@@ -50,6 +50,7 @@ namespace HideoutAutomation.Helpers
 
         internal static void LogInfoToConsole(string info)
         {
+            LogInfo(info);
             ToConsole(info, LogType.Log);
         }
 

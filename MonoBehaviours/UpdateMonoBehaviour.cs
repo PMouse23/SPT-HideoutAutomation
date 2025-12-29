@@ -4,7 +4,6 @@ using EFT.Hideout;
 using EFT.InventoryLogic;
 using EFT.UI;
 using HideoutAutomation.Helpers;
-using SPT.SinglePlayer.Utils.InRaid;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -57,7 +56,7 @@ namespace HideoutAutomation.MonoBehaviours
             }
             if (Globals.ResetDeclinedAreaUpdates.IsPressed() == false)
                 return;
-            if (hasRaidLoaded())
+            if (RaidHelper.HasRaidLoaded())
                 return;
             if (this.lastRun == null)
                 return;
@@ -99,12 +98,6 @@ namespace HideoutAutomation.MonoBehaviours
             return addSpaces(str, length);
         }
 
-        private static bool hasRaidLoaded()
-        {
-            return RaidTimeUtil.HasRaidLoaded()
-                && Singleton<AbstractGame>.Instance?.GameType != EGameType.Hideout;
-        }
-
         private IEnumerator coroutine()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -117,7 +110,7 @@ namespace HideoutAutomation.MonoBehaviours
                 this.lastRun = DateTime.Now;
                 if (this.cancellationToken?.IsCancellationRequested == true)
                     yield break;
-                if (hasRaidLoaded() == false)
+                if (RaidHelper.HasRaidLoaded() == false)
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Not in a raid.");
@@ -337,7 +330,7 @@ namespace HideoutAutomation.MonoBehaviours
         {
             TimeSpan? dtm = DateTime.Now - this.lastRun;
             LogHelper.LogInfoWithNotification($"HA: Last run: {dtm?.Seconds ?? -1} seconds ago.");
-            if (hasRaidLoaded())
+            if (RaidHelper.HasRaidLoaded())
                 LogHelper.LogErrorWithNotification("HA: Appears to have raid loaded");
             if (this.cancellationToken?.IsCancellationRequested == true)
                 LogHelper.LogErrorWithNotification("HA: CancellationRequested");
