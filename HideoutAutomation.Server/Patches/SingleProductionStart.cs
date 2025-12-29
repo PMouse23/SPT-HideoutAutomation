@@ -21,8 +21,6 @@ namespace HideoutAutomation.Server.Patches
                 bool shouldStack = automationService.ShouldStack(sessionID, pmcData, request);
                 if (shouldStack)
                 {
-                    request.Items?.Clear();
-                    request.Tools?.Clear();
                     automationService.Stack(sessionID, request);
                     result = false;
                 }
