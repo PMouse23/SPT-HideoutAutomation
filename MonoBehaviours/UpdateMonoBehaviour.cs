@@ -141,23 +141,23 @@ namespace HideoutAutomation.MonoBehaviours
                             EAreaType areaType = data.Template.Type;
                             string name = data.Template.Name;
                             if (Globals.Debug)
-                            {
                                 LogHelper.LogInfo($"EAreaType: {areaType}, Status={status}");
-                                //LogHelper.LogInfo($"CurrentStage={Json.Serialize(data.CurrentStage)}");
-                                //LogHelper.LogInfo($"NextStage={Json.Serialize(data.NextStage)}");
-                            }
                             List<Requirement> requirements = this.removeRequirements(data);
                             if (Globals.IsHideoutInProgress
                                 && Globals.IsHideoutInProgressSupportEnabled
                                 && interactableStatuses.Contains(status)
                                 && this.hideoutInProgressRequirementsAreMet(requirements))
                             {
+                                if (Globals.Debug)
+                                    LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
                                 foreach (ItemRequirement itemRequirement in itemRequirements)
                                 {
                                     var contributions = hideout.method_21([itemRequirement]);
                                     if (contributions.Count > 0)
                                     {
+                                        if (Globals.Debug)
+                                            LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
                                         this.hideoutInProgressContribute(data, itemRequirements);
                                         foreach (var contribution in contributions)
                                             LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
@@ -310,6 +310,8 @@ namespace HideoutAutomation.MonoBehaviours
         private void hideoutInProgressContribute(AreaData areaData, ItemRequirement[] itemRequirements)
         {
             Type? transferButtonType = Globals.HIPTransferButtonType;
+            if (Globals.Debug)
+                LogHelper.LogInfo($"(HIP): transferButtonType={transferButtonType}");
             if (transferButtonType != null)
             {
                 object transferButton = Activator.CreateInstance(transferButtonType);
