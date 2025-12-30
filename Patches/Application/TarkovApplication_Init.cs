@@ -21,16 +21,17 @@ namespace HideoutAutomation.Patches.Application
 
         private static void checkForHideoutInProgress()
         {
-            if (ModChecker.IsModLoaded("Tyfon.HideoutInProgress"))
+            if (ModChecker.IsModLoaded("Tyfon.HideoutInProgress")
+                || ModChecker.IsModLoaded("com.tyfon.hideoutinprogress"))
             {
                 if (Globals.Debug)
-                    LogHelper.LogInfo("Tyfon.HideoutInProgress detected");
+                    LogHelper.LogInfo("com.tyfon.hideoutinprogress detected");
                 Globals.IsHideoutInProgress = true;
                 Type? transferButtonTargetType = ReflectionHelper.FindType("HideoutInProgress.TransferButton");
                 if (transferButtonTargetType == null)
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfo("transferButtonTargetType not found.");
+                        LogHelper.LogError("transferButtonTargetType not found.");
                     return;
                 }
                 Globals.HIPTransferButtonType = transferButtonTargetType;
@@ -38,7 +39,7 @@ namespace HideoutAutomation.Patches.Application
                 if (contributeMethodInfo == null)
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfo("contributeMethodInfo not found.");
+                        LogHelper.LogError("contributeMethodInfo not found.");
                     return;
                 }
                 Globals.HIPContributeMethodInfo = contributeMethodInfo;
@@ -46,7 +47,7 @@ namespace HideoutAutomation.Patches.Application
                 if (itemRequirementsFieldInfo == null)
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfo("itemRequirementsFieldInfo not found.");
+                        LogHelper.LogError("itemRequirementsFieldInfo not found.");
                     return;
                 }
                 Globals.HIPItemRequirementsFieldInfo = itemRequirementsFieldInfo;
@@ -54,7 +55,7 @@ namespace HideoutAutomation.Patches.Application
                 if (areaDataFieldInfo == null)
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfo("areaDataFieldInfo not found.");
+                        LogHelper.LogError("areaDataFieldInfo not found.");
                     return;
                 }
                 Globals.HIPAreaDataFieldInfo = areaDataFieldInfo;
