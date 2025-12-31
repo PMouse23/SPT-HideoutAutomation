@@ -40,13 +40,19 @@ namespace HideoutAutomation.MonoBehaviours
 
         public void Start()
         {
-            this.StartCoroutine(this.coroutine());
-            if (Globals.Debug)
-                LogHelper.LogInfo($"Started coroutine");
+            this.startCoroutine();
         }
 
         public void Update()
         {
+            if (RaidHelper.HasRaidLoaded())
+            {
+                this.stopCoroutines();
+                return;
+            }
+            else if (this.cancellationToken?.IsCancellationRequested == true)
+                this.startCoroutine();
+
             bool shouldInvestigate = Globals.Debug && Globals.InvestigateKeys.IsPressed();
             if (this.didInvestigate != shouldInvestigate)
             {
@@ -62,17 +68,12 @@ namespace HideoutAutomation.MonoBehaviours
                 return;
             if (Globals.Debug)
                 this.investigate();
-            this.StopAllCoroutines();
-            this.lastRun = null;
-            this.cancellationTokenSource?.Cancel();
-            this.StopAllCoroutines();
-            if (Globals.Debug)
-                LogHelper.LogInfoWithNotification("Stopped coroutine");
+            this.stopCoroutines();
+
             this.declinedAreaUpdates.Clear();
             LogHelper.LogInfoWithNotification($"Declined Area(s) reset.");
-            this.StartCoroutine(this.coroutine());
-            if (Globals.Debug)
-                LogHelper.LogInfoWithNotification("Started coroutine");
+
+            this.startCoroutine();
         }
 
         private static string addSpaces(string input, int length)
@@ -470,6 +471,26 @@ namespace HideoutAutomation.MonoBehaviours
             TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft;
             var handle = ItemUiContext.Instance.ShowMessageWindow(description, acceptAction, cancelAction, caption, time, forceShow, alignment);
             this.inDialog = true;
+        }
+
+        private void startCoroutine()
+        {
+            this.StartCoroutine(this.coroutine());
+            if (Globals.Debug)
+                LogHelper.LogInfo($"Started coroutine");
+        }
+
+        private void stopCoroutines()
+        {
+            if (this.lastRun == null)
+                return;
+
+            this.StopAllCoroutines();
+            this.lastRun = null;
+            this.cancellationTokenSource?.Cancel();
+            this.StopAllCoroutines();
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification("Stopped coroutine");
         }
     }
 }
