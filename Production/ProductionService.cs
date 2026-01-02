@@ -54,8 +54,7 @@ namespace HideoutAutomation.Production
                         producer.StartProducing(next);
                     }
 
-                    foreach (ProduceView produceView in produceViews)
-                        produceView.UpdateView();
+                    this.updateProduceViews();
                 }
                 catch (Exception ex)
                 {
@@ -110,6 +109,17 @@ namespace HideoutAutomation.Production
             };
             string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StartFromStack", JsonConvert.SerializeObject(nextProductionRequest));
             return JsonConvert.DeserializeObject<ProductionBuild>(response);
+        }
+
+        private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
+        {
+            return producer.Schemes.ContainsKey(completedSchemeId) && producer.Schemes[completedSchemeId].continuous;
+        }
+
+        private void updateProduceViews()
+        {
+            foreach (ProduceView produceView in produceViews)
+                produceView.UpdateView();
         }
     }
 }
