@@ -65,6 +65,7 @@ namespace HideoutAutomation.Server
         public MongoId ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Pop();
+            startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
             return startRequestData.RecipeId;
