@@ -102,6 +102,9 @@ namespace HideoutAutomation.Patches.View
                     return;
 
                 var scheme = produceView.Scheme;
+                if (scheme.continuous)
+                    return;
+
                 string schemeId = scheme._id;
                 EAreaType areaType = (EAreaType)scheme.areaType;
 
