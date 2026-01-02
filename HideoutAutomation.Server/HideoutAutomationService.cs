@@ -181,7 +181,10 @@ namespace HideoutAutomation.Server
 
         private IEnumerable<Production?> getAreaProductions(PmcData pmcData, HideoutAreas area)
         {
-            return pmcData.Hideout?.Production?.Values?.Where(prod => prod != null && this.getHideoutArea(prod.RecipeId) == area) ?? [];
+            return pmcData.Hideout?.Production?.Values?.Where(prod => prod != null
+                                                                   && (prod.SptIsContinuous == null
+                                                                   || prod.SptIsContinuous == false)
+                                                                   && this.getHideoutArea(prod.RecipeId) == area) ?? [];
         }
 
         private HideoutAreas? getHideoutArea(MongoId recipeId)
