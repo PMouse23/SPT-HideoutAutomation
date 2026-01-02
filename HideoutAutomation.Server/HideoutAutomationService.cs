@@ -79,6 +79,11 @@ namespace HideoutAutomation.Server
             if (this.areaIsProducing(pmcData, area.Value))
                 return true;
             MongoId recipeId = requestData.RecipeId;
+
+            HideoutProduction? hideoutProduction = this.getHideoutProduction(recipeId);
+            if (hideoutProduction?.Continuous == true)
+                return false;
+
             Production? production = null;
             if (this.areaIsProducingRecipe(pmcData, recipeId, out production) == false)
                 return false;
