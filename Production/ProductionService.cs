@@ -29,6 +29,13 @@ namespace HideoutAutomation.Production
                     var producer = obj;
                     EAreaType areaType = producer.AreaType;
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
+
+                    if (isContinuousScheme(producer, completedSchemeId))
+                    {
+                        this.updateProduceViews();
+                        return;
+                    }
+
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
