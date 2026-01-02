@@ -12,7 +12,7 @@ namespace HideoutAutomation
     [BepInPlugin("com.KnotScripts.HideoutAutomation", "HideoutAutomation", VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string VERSION = "1.2.1";
+        public const string VERSION = "1.2.2";
 
         private ConfigEntry<bool> autoConstruct;
         private ConfigEntry<bool> autoInstall;
