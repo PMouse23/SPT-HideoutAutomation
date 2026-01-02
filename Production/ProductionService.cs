@@ -45,6 +45,7 @@ namespace HideoutAutomation.Production
                     int count = await this.GetAreaCount(areaType);
                     if (count > 0)
                     {
+                        await Task.Delay(500);
                         if (Globals.Debug)
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
                         ProductionBuild next = await this.StartFromStack(areaType);
