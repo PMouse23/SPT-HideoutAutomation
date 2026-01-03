@@ -102,6 +102,8 @@ namespace HideoutAutomation.Patches.View
                     return;
 
                 var scheme = produceView.Scheme;
+                if (scheme == null)
+                    return;
                 if (scheme.continuous)
                     return;
 
