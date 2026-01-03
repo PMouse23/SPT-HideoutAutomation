@@ -119,20 +119,10 @@ namespace HideoutAutomation.Patches.View
                 int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
-                {
-                    startButton.SetHeaderText($"Stack ({stacked})");
-                    startButton.OnClick.RemoveAllListeners();
-                    startButton.OnClick.AddListener(() => { OnClick(produceView); });
-                    startButton.Interactable = canStart;
-                    startButton.gameObject.SetActive(true);
-                }
+                    patchStartButton(produceView, canStart, stacked, startButton);
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
-                {
-                    int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
-                    if (inProduction > 0)
-                        resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
-                }
+                    await patchResultItemIconViewFactory(scheme, schemeId, areaType, resultItemIconViewFactory);
                 object viewCanvas = ____viewCanvas;
                 if (viewCanvas != null)
                     unlockCanvasGroupMethod?.Invoke(null, new object[] { viewCanvas, true, false });
@@ -141,6 +131,22 @@ namespace HideoutAutomation.Patches.View
             {
                 LogHelper.LogExceptionToConsole(ex);
             }
+        }
+
+        private static async System.Threading.Tasks.Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
+        {
+            int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+            if (inProduction > 0)
+                resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
+        }
+
+        private static void patchStartButton(ProduceView produceView, bool canStart, int stacked, DefaultUIButton startButton)
+        {
+            startButton.SetHeaderText($"Stack ({stacked})");
+            startButton.OnClick.RemoveAllListeners();
+            startButton.OnClick.AddListener(() => { OnClick(produceView); });
+            startButton.Interactable = canStart;
+            startButton.gameObject.SetActive(true);
         }
 
         private bool IsTargetMethod(MethodInfo method)
