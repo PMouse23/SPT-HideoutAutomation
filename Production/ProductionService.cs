@@ -49,9 +49,19 @@ namespace HideoutAutomation.Production
                         if (Globals.Debug)
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
                         ProductionBuild next = await this.StartFromStack(areaType);
-                        if (Globals.Debug)
-                            LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
-                        producer.StartProducing(next);
+                        if (next != null)
+                        {
+                            if (Globals.Debug)
+                                LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
+
+                            var producingItem = next.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
+                            if (producingItem != null && producingItem.SchemeId != null)
+                            {
+                                if (Globals.Debug)
+                                    LogHelper.LogInfoWithNotification($"producingItem {producingItem.SchemeId}.");
+                                producer.StartProducing(next);
+                            }
+                        }
                     }
 
                     this.updateProduceViews();
