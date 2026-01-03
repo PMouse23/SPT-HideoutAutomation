@@ -133,7 +133,9 @@ namespace HideoutAutomation.Patches.View
                     if (inProduction > 0)
                         resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
                 }
-                unlockCanvasGroupMethod?.Invoke(null, new object[] { ____viewCanvas, true, false });
+                object viewCanvas = ____viewCanvas;
+                if (viewCanvas != null)
+                    unlockCanvasGroupMethod?.Invoke(null, new object[] { viewCanvas, true, false });
             }
             catch (Exception ex)
             {
