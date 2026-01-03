@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace HideoutAutomation.Patches.View
 {
@@ -92,7 +91,6 @@ namespace HideoutAutomation.Patches.View
         private static async void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
-            GameObject ____expectedTimePanel,
             object ____viewCanvas)
         {
             try
