@@ -12,23 +12,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace HideoutAutomation.Patches.View
 {
     internal class ProduceView_UpdateView : ModulePatch
     {
-        private static MethodInfo unlockCanvasGroupMethod;
-        private static Type unlockCanvasGroupType;
-
         protected override MethodBase GetTargetMethod()
         {
-            unlockCanvasGroupType = AccessTools.GetTypesFromAssembly(typeof(AbstractGame).Assembly)
-                                      .SingleOrDefault(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static).Any(this.isTargetUnlockCanvasGroupMethod));
-            if (unlockCanvasGroupType == null)
-                LogHelper.LogInfo($"unlockCanvasGroupType not found");
-            unlockCanvasGroupMethod = unlockCanvasGroupType.GetMethods(BindingFlags.Public | BindingFlags.Static).FirstOrDefault(this.isTargetUnlockCanvasGroupMethod);
-            if (unlockCanvasGroupMethod == null)
-                LogHelper.LogInfo($"unlockCanvasGroupMethod not found");
             return AccessTools.FirstMethod(typeof(ProduceView), this.IsTargetMethod);
         }
 
@@ -91,7 +82,7 @@ namespace HideoutAutomation.Patches.View
         private static async void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
-            object ____viewCanvas)
+            CanvasGroup ____viewCanvas)
         {
             try
             {
@@ -123,9 +114,12 @@ namespace HideoutAutomation.Patches.View
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
                     await patchResultItemIconViewFactory(scheme, schemeId, areaType, resultItemIconViewFactory);
-                object viewCanvas = ____viewCanvas;
+                CanvasGroup viewCanvas = ____viewCanvas;
                 if (viewCanvas != null)
-                    unlockCanvasGroupMethod?.Invoke(null, new object[] { viewCanvas, true, false });
+                {
+                    viewCanvas.alpha = 1f;
+                    viewCanvas.interactable = true;
+                }
             }
             catch (Exception ex)
             {
@@ -154,12 +148,6 @@ namespace HideoutAutomation.Patches.View
             ParameterInfo[] parameters = method.GetParameters();
             return method.Name == nameof(ProduceView.UpdateView)
                 && parameters.Length != 1;
-        }
-
-        private bool isTargetUnlockCanvasGroupMethod(MethodInfo methodInfo)
-        {
-            return methodInfo.Name == "SetUnlockStatus"
-                && methodInfo.GetParameters().Length == 3;
         }
     }
 }
