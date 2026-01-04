@@ -28,6 +28,8 @@ namespace HideoutAutomation.Server
         EventOutputHolder eventOutputHolder
         )
     {
+        private const string purifiedWaterRecipeId = "5d5589c1f934db045e6c5492";
+
         public ValueTask<int> AreaCount(MongoId sessionId, AreaCountRequestData requestData)
         {
             HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
@@ -190,6 +192,7 @@ namespace HideoutAutomation.Server
             return pmcData.Hideout?.Production?.Values?.Where(prod => prod != null
                                                                    && (prod.SptIsContinuous == null
                                                                    || prod.SptIsContinuous == false)
+                                                                   && prod.RecipeId != purifiedWaterRecipeId
                                                                    && this.getHideoutArea(prod.RecipeId) == area) ?? [];
         }
 
