@@ -18,18 +18,8 @@ namespace HideoutAutomation.Patches.View
 {
     internal class ProduceView_UpdateView : ModulePatch
     {
-        private static MethodInfo unlockCanvasGroupMethod;
-        private static Type unlockCanvasGroupType;
-
         protected override MethodBase GetTargetMethod()
         {
-            unlockCanvasGroupType = AccessTools.GetTypesFromAssembly(typeof(AbstractGame).Assembly)
-                                      .SingleOrDefault(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static).Any(this.isTargetUnlockCanvasGroupMethod));
-            if (unlockCanvasGroupType == null)
-                LogHelper.LogInfo($"unlockCanvasGroupType not found");
-            unlockCanvasGroupMethod = unlockCanvasGroupType.GetMethods(BindingFlags.Public | BindingFlags.Static).FirstOrDefault(this.isTargetUnlockCanvasGroupMethod);
-            if (unlockCanvasGroupMethod == null)
-                LogHelper.LogInfo($"unlockCanvasGroupMethod not found");
             return AccessTools.FirstMethod(typeof(ProduceView), this.IsTargetMethod);
         }
 
@@ -92,8 +82,7 @@ namespace HideoutAutomation.Patches.View
         private static async void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
-            GameObject ____expectedTimePanel,
-            object ____viewCanvas)
+            CanvasGroup ____viewCanvas)
         {
             try
             {
@@ -102,6 +91,8 @@ namespace HideoutAutomation.Patches.View
                     return;
 
                 var scheme = produceView.Scheme;
+                if (scheme == null)
+                    return;
                 if (scheme.continuous)
                     return;
 
@@ -119,21 +110,16 @@ namespace HideoutAutomation.Patches.View
                 int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
-                {
-                    startButton.SetHeaderText($"Stack ({stacked})");
-                    startButton.OnClick.RemoveAllListeners();
-                    startButton.OnClick.AddListener(() => { OnClick(produceView); });
-                    startButton.Interactable = canStart;
-                    startButton.gameObject.SetActive(true);
-                }
+                    patchStartButton(produceView, canStart, stacked, startButton);
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
+                    await patchResultItemIconViewFactory(scheme, schemeId, areaType, resultItemIconViewFactory);
+                CanvasGroup viewCanvas = ____viewCanvas;
+                if (viewCanvas != null)
                 {
-                    int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
-                    if (inProduction > 0)
-                        resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
+                    viewCanvas.alpha = 1f;
+                    viewCanvas.interactable = true;
                 }
-                unlockCanvasGroupMethod?.Invoke(null, new object[] { ____viewCanvas, true, false });
             }
             catch (Exception ex)
             {
@@ -141,17 +127,27 @@ namespace HideoutAutomation.Patches.View
             }
         }
 
+        private static async System.Threading.Tasks.Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
+        {
+            int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+            if (inProduction > 0)
+                resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
+        }
+
+        private static void patchStartButton(ProduceView produceView, bool canStart, int stacked, DefaultUIButton startButton)
+        {
+            startButton.SetHeaderText($"Stack ({stacked})");
+            startButton.OnClick.RemoveAllListeners();
+            startButton.OnClick.AddListener(() => { OnClick(produceView); });
+            startButton.Interactable = canStart;
+            startButton.gameObject.SetActive(true);
+        }
+
         private bool IsTargetMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
             return method.Name == nameof(ProduceView.UpdateView)
                 && parameters.Length != 1;
-        }
-
-        private bool isTargetUnlockCanvasGroupMethod(MethodInfo methodInfo)
-        {
-            return methodInfo.Name == "SetUnlockStatus"
-                && methodInfo.GetParameters().Length == 3;
         }
     }
 }

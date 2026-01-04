@@ -39,8 +39,9 @@ namespace HideoutAutomation.Helpers
         internal static void LogExceptionToConsole(Exception exception)
         {
             LogException(exception);
-
             ConsoleScreen.LogException(exception);
+            if (exception.InnerException != null)
+                LogExceptionToConsole(exception.InnerException);
         }
 
         internal static void LogInfo(string info)
