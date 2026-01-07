@@ -367,8 +367,12 @@ namespace HideoutAutomation.MonoBehaviours
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
             {
-                if (Globals.IsHideoutInProgress && requirement is ItemRequirement itemRequirement && itemRequirement.IntCount > 0)
+                if (Globals.IsHideoutInProgress && requirement is ItemRequirement itemRequirement && itemRequirement.Fulfilled == false)
+                {
+                    if (Globals.Debug)
+                        LogHelper.LogInfo($"blocked: IsHideoutInProgress, ClassType={requirement.GetType()} Fulfilled={requirement.Fulfilled} Type={requirement.Type}, BaseCount={itemRequirement.BaseCount}");
                     return false;
+                }
                 else if (this.isAllowToHandover(requirement) == false)
                     return false;
             }
