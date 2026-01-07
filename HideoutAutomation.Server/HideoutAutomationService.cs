@@ -128,12 +128,15 @@ namespace HideoutAutomation.Server
             if (data == null)
                 return ValueTask.FromResult(false);
 
-            int count = this.stackCount(data, area.Value, recipeId);
-            bool needToPayTool = count == 0;
-            if (needToPayTool)
-                needToPayTool = this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
-            if (needToPayTool == false)
-                requestData.Tools?.Clear();
+            //int count = this.stackCount(data, area.Value, recipeId);
+            //bool needToPayTool = count == 0;
+            //if (needToPayTool)
+            //    needToPayTool = this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
+            //if (needToPayTool == false)
+            //    requestData.Tools?.Clear();
+
+            //HACK don't hand in the tools this is trick at the moment.
+            requestData.Tools?.Clear();
 
             this.takeItems(sessionId, pmcData, requestData);
             requestData.Items?.Clear();
