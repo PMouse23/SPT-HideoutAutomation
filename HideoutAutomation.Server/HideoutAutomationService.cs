@@ -86,8 +86,6 @@ namespace HideoutAutomation.Server
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
-            startRequestData.Tools.Clear();
-            startRequestData.Items.Clear();
             HideoutProduction? hideoutProduction = this.getHideoutProduction(startRequestData.RecipeId);
             if (hideoutProduction == null || hideoutProduction.Requirements == null)
                 return null;
@@ -131,7 +129,9 @@ namespace HideoutAutomation.Server
                 return ValueTask.FromResult(false);
 
             int count = this.stackCount(data, area.Value, recipeId);
-            bool needToPayTool = count == 0 || this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
+            bool needToPayTool = count == 0;
+            if (needToPayTool)
+                needToPayTool = this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
             if (needToPayTool == false)
                 requestData.Tools?.Clear();
 
