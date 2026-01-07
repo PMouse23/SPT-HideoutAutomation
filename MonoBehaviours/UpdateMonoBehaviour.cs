@@ -3,7 +3,10 @@ using EFT;
 using EFT.Hideout;
 using EFT.InventoryLogic;
 using EFT.UI;
+using HideoutAutomation.Construction.Requests;
 using HideoutAutomation.Helpers;
+using Newtonsoft.Json;
+using SPT.Common.Http;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -99,6 +102,16 @@ namespace HideoutAutomation.MonoBehaviours
             return addSpaces(str, length);
         }
 
+        private bool CanFindAllItems(IEnumerable<string> itemIds)
+        {
+            FindItemsRequest findItemsRequest = new FindItemsRequest()
+            {
+                itemIds = itemIds.ToArray()
+            };
+            string response = RequestHandler.PutJson("/hideoutautomation/CanFindAllItems", JsonConvert.SerializeObject(findItemsRequest));
+            return JsonConvert.DeserializeObject<bool>(response);
+        }
+
         private IEnumerator coroutine()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -151,25 +164,34 @@ namespace HideoutAutomation.MonoBehaviours
                             {
                                 if (Globals.Debug)
                                     LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
+
+                                List<string> itemIds = [];
+                                List<string> contributionMessages = [];
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
-                                bool contributed = false;
                                 foreach (ItemRequirement itemRequirement in itemRequirements)
                                 {
                                     var contributions = hideout.method_21([itemRequirement]);
                                     if (contributions.Count > 0)
                                     {
-                                        if (contributed == false)
-                                        {
-                                            if (Globals.Debug)
-                                                LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
-                                            this.hideoutInProgressContribute(data, itemRequirements);
-                                            contributed = true;
-                                            yield return new WaitForSeconds(0.5f);
-                                        }
+                                        if (Globals.Debug)
+                                            LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
                                         foreach (var contribution in contributions)
-                                            LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
+                                        {
+                                            string itemId = contribution.Item.Id;
+                                            string contributionMessage = $"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.";
+                                            itemIds.Add(itemId);
+                                            contributionMessages.Add(contributionMessage);
+                                        }
                                     }
                                 }
+                                bool contribute = itemIds.Any() && this.CanFindAllItems(itemIds);
+                                if (contribute)
+                                {
+                                    this.hideoutInProgressContribute(data, itemRequirements);
+                                    foreach (string contributionMessage in contributionMessages)
+                                        LogHelper.LogInfoWithNotification(contributionMessage);
+                                }
+                                yield return new WaitForSeconds(0.5f);
                             }
                             switch (status)
                             {

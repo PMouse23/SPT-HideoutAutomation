@@ -44,6 +44,22 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(count);
         }
 
+        public ValueTask<bool> CanFindAllItems(MongoId sessionId, FindItemsRequestData requestData)
+        {
+            if (requestData.ItemIds == null)
+                return ValueTask.FromResult(false);
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(false);
+            foreach (MongoId itemId in requestData.ItemIds)
+            {
+                bool? found = pmcData.Inventory?.Items?.Any(i => i.Id == itemId);
+                if (found != true)
+                    return ValueTask.FromResult(false);
+            }
+            return ValueTask.FromResult(true);
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
