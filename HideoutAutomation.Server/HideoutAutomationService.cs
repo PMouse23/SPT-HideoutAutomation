@@ -60,14 +60,21 @@ namespace HideoutAutomation.Server
                 return null;
             if (values.Count == 0)
                 return null;
-            MongoId recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
+            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
             return recipeId;
         }
 
-        public MongoId ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Pop();
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (startRequestData.Tools == null || startRequestData.Items == null)
+                return null;
+            startRequestData.Tools.Clear();
+            startRequestData.Items.Clear();
+            HideoutProduction? hideoutProduction = this.getHideoutProduction(startRequestData.RecipeId);
+            if (hideoutProduction == null || hideoutProduction.Requirements == null)
+                return null;
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
             return startRequestData.RecipeId;
