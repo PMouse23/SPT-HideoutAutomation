@@ -152,17 +152,22 @@ namespace HideoutAutomation.MonoBehaviours
                                 if (Globals.Debug)
                                     LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
+                                bool contributed = false;
                                 foreach (ItemRequirement itemRequirement in itemRequirements)
                                 {
                                     var contributions = hideout.method_21([itemRequirement]);
                                     if (contributions.Count > 0)
                                     {
-                                        if (Globals.Debug)
-                                            LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
-                                        this.hideoutInProgressContribute(data, itemRequirements);
+                                        if (contributed == false)
+                                        {
+                                            if (Globals.Debug)
+                                                LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
+                                            this.hideoutInProgressContribute(data, itemRequirements);
+                                            contributed = true;
+                                            yield return new WaitForSeconds(0.5f);
+                                        }
                                         foreach (var contribution in contributions)
                                             LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
-                                        yield return new WaitForSeconds(0.5f);
                                     }
                                 }
                             }
@@ -361,8 +366,12 @@ namespace HideoutAutomation.MonoBehaviours
                 return false;
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
-                if (this.isAllowToHandover(requirement) == false)
+            {
+                if (Globals.IsHideoutInProgress && requirement is ItemRequirement itemRequirement && itemRequirement.IntCount > 0)
                     return false;
+                else if (this.isAllowToHandover(requirement) == false)
+                    return false;
+            }
             return true;
         }
 
