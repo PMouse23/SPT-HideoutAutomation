@@ -3,7 +3,10 @@ using EFT;
 using EFT.Hideout;
 using EFT.InventoryLogic;
 using EFT.UI;
+using HideoutAutomation.Construction.Requests;
 using HideoutAutomation.Helpers;
+using Newtonsoft.Json;
+using SPT.Common.Http;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -99,6 +102,16 @@ namespace HideoutAutomation.MonoBehaviours
             return addSpaces(str, length);
         }
 
+        private bool CanFindAllItems(IEnumerable<string> itemIds)
+        {
+            FindItemsRequest findItemsRequest = new FindItemsRequest()
+            {
+                itemIds = itemIds.ToArray()
+            };
+            string response = RequestHandler.PutJson("/hideoutautomation/CanFindAllItems", JsonConvert.SerializeObject(findItemsRequest));
+            return JsonConvert.DeserializeObject<bool>(response);
+        }
+
         private IEnumerator coroutine()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -151,6 +164,9 @@ namespace HideoutAutomation.MonoBehaviours
                             {
                                 if (Globals.Debug)
                                     LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
+
+                                List<string> itemIds = [];
+                                List<string> contributionMessages = [];
                                 ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
                                 foreach (ItemRequirement itemRequirement in itemRequirements)
                                 {
@@ -159,12 +175,23 @@ namespace HideoutAutomation.MonoBehaviours
                                     {
                                         if (Globals.Debug)
                                             LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
-                                        this.hideoutInProgressContribute(data, itemRequirements);
                                         foreach (var contribution in contributions)
-                                            LogHelper.LogInfoWithNotification($"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.");
-                                        yield return new WaitForSeconds(0.5f);
+                                        {
+                                            string itemId = contribution.Item.Id;
+                                            string contributionMessage = $"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.";
+                                            itemIds.Add(itemId);
+                                            contributionMessages.Add(contributionMessage);
+                                        }
                                     }
                                 }
+                                bool contribute = itemIds.Any() && this.CanFindAllItems(itemIds);
+                                if (contribute)
+                                {
+                                    this.hideoutInProgressContribute(data, itemRequirements);
+                                    foreach (string contributionMessage in contributionMessages)
+                                        LogHelper.LogInfoWithNotification(contributionMessage);
+                                }
+                                yield return new WaitForSeconds(0.5f);
                             }
                             switch (status)
                             {
@@ -361,8 +388,16 @@ namespace HideoutAutomation.MonoBehaviours
                 return false;
             RelatedRequirements requirements = data.NextStage.Requirements;
             foreach (Requirement requirement in requirements)
-                if (this.isAllowToHandover(requirement) == false)
+            {
+                if (Globals.IsHideoutInProgress && requirement is ItemRequirement itemRequirement && itemRequirement.Fulfilled == false)
+                {
+                    if (Globals.Debug)
+                        LogHelper.LogInfo($"blocked: IsHideoutInProgress, ClassType={requirement.GetType()} Fulfilled={requirement.Fulfilled} Type={requirement.Type}, BaseCount={itemRequirement.BaseCount}");
                     return false;
+                }
+                else if (this.isAllowToHandover(requirement) == false)
+                    return false;
+            }
             return true;
         }
 

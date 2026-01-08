@@ -57,7 +57,7 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
-	<Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\UnityEngine.UIModule.dll</HintPath>
     </Reference>
@@ -106,6 +106,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Construction\Requests\FindItemsRequest.cs" />
     <Compile Include="Extensions\ProduceViewExtensions.cs" />
     <Compile Include="Helpers\LogHelper.cs" />
     <Compile Include="Globals.cs" />

@@ -44,6 +44,22 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(count);
         }
 
+        public ValueTask<bool> CanFindAllItems(MongoId sessionId, FindItemsRequestData requestData)
+        {
+            if (requestData.ItemIds == null)
+                return ValueTask.FromResult(false);
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(false);
+            foreach (MongoId itemId in requestData.ItemIds)
+            {
+                bool? found = pmcData.Inventory?.Items?.Any(i => i.Id == itemId);
+                if (found != true)
+                    return ValueTask.FromResult(false);
+            }
+            return ValueTask.FromResult(true);
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
@@ -60,14 +76,19 @@ namespace HideoutAutomation.Server
                 return null;
             if (values.Count == 0)
                 return null;
-            MongoId recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
+            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
             return recipeId;
         }
 
-        public MongoId ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Pop();
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (startRequestData.Tools == null || startRequestData.Items == null)
+                return null;
+            HideoutProduction? hideoutProduction = this.getHideoutProduction(startRequestData.RecipeId);
+            if (hideoutProduction == null || hideoutProduction.Requirements == null)
+                return null;
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
             return startRequestData.RecipeId;
@@ -107,10 +128,15 @@ namespace HideoutAutomation.Server
             if (data == null)
                 return ValueTask.FromResult(false);
 
-            int count = this.stackCount(data, area.Value, recipeId);
-            bool needToPayTool = count == 0 || this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
-            if (needToPayTool == false)
-                requestData.Tools?.Clear();
+            //int count = this.stackCount(data, area.Value, recipeId);
+            //bool needToPayTool = count == 0;
+            //if (needToPayTool)
+            //    needToPayTool = this.areaIsProducingRecipe(pmcData, recipeId, out Production? production) == false;
+            //if (needToPayTool == false)
+            //    requestData.Tools?.Clear();
+
+            //HACK don't hand in the tools this is trick at the moment.
+            requestData.Tools?.Clear();
 
             this.takeItems(sessionId, pmcData, requestData);
             requestData.Items?.Clear();
