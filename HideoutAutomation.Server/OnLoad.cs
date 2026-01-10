@@ -12,6 +12,7 @@ namespace HideoutAutomation.Server
         {
             new GameStart().Enable();
             new SingleProductionStart().Enable();
+            new UpgradeComplete().Enable();
 
             return Task.CompletedTask;
         }
