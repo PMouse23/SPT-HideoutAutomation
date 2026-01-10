@@ -46,14 +46,23 @@ namespace HideoutAutomation.Server.Patches
                 if (level is null)
                 {
                     logger.Error($"Stage level is null.");
+                    httpResponseUtil.AppendErrorToOutput(output);
                     return false;
                 }
                 level++;
                 string? levelString = level.ToString();
+                Stage? hideoutStage = null;
                 if (levelString is null
-                    || hideoutData.Stages?.TryGetValue(levelString, out var hideoutStage) == false)
+                    || hideoutData.Stages?.TryGetValue(levelString, out hideoutStage) == false)
                 {
                     logger.Error($"Stage level: {level} not found for area: {request.AreaType}");
+                    return false;
+                }
+                var constructionTime = hideoutStage?.ConstructionTime ?? 0;
+                if (profileHideoutArea.Constructing == false && constructionTime > 0)
+                {
+                    logger.Error($"Area: {request.AreaType} not constructing.");
+                    httpResponseUtil.AppendErrorToOutput(output);
                     return false;
                 }
             }
