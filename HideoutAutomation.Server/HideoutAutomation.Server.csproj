@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <Version>1.2.4</Version>
+    <Version>1.2.5</Version>
     <SPTPath>D:\Offline</SPTPath>
   </PropertyGroup>
   

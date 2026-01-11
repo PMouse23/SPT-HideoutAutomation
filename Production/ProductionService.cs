@@ -39,8 +39,10 @@ namespace HideoutAutomation.Production
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
-                    if (await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
-                        producer.GetItems(completedSchemeId);
+
+                    if (this.CanFindProduction(completedSchemeId))
+                        await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow);
+                    producer.GetItems(completedSchemeId);
 
                     int count = await this.GetAreaCount(areaType);
                     if (count > 0)
@@ -124,6 +126,16 @@ namespace HideoutAutomation.Production
         private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
         {
             return producer.Schemes.ContainsKey(completedSchemeId) && producer.Schemes[completedSchemeId].continuous;
+        }
+
+        private bool CanFindProduction(string schemeId)
+        {
+            FindProductionRequest findProductionRequest = new FindProductionRequest()
+            {
+                schemeId = schemeId
+            };
+            string response = RequestHandler.PutJson("/hideoutautomation/CanFindProduction", JsonConvert.SerializeObject(findProductionRequest));
+            return JsonConvert.DeserializeObject<bool>(response);
         }
 
         private void updateProduceViews()

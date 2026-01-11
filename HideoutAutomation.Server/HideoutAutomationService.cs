@@ -39,7 +39,7 @@ namespace HideoutAutomation.Server
             HideoutAreas area = requestData.Area;
             if (requestData.IncludeCurrentProduction && this.areaIsProducing(sessionId, area))
                 count = 1;
-            if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? value))
+            if (data.AreaProductions.TryGetValue(area, out Queue<HideoutSingleProductionStartRequestData>? value))
                 count = count + value.Count();
             return ValueTask.FromResult(count);
         }
@@ -60,6 +60,19 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(true);
         }
 
+        public ValueTask<bool> CanFindProduction(MongoId sessionId, FindProductionRequestData requestData)
+        {
+            if (requestData.SchemeId == null)
+                return ValueTask.FromResult(false);
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(false);
+            bool? hasProduction = pmcData.Hideout?.Production?.Values.Any(productionInProfile => productionInProfile != null && productionInProfile.RecipeId == requestData.SchemeId);
+            if (hasProduction == null)
+                return ValueTask.FromResult(false);
+            return ValueTask.FromResult(hasProduction.Value);
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
@@ -72,7 +85,7 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
                 return null;
-            if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? values) == false)
+            if (data.AreaProductions.TryGetValue(area, out Queue<HideoutSingleProductionStartRequestData>? values) == false)
                 return null;
             if (values.Count == 0)
                 return null;
@@ -80,9 +93,9 @@ namespace HideoutAutomation.Server
             return recipeId;
         }
 
-        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Stack<HideoutSingleProductionStartRequestData> values)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Queue<HideoutSingleProductionStartRequestData> values)
         {
-            HideoutSingleProductionStartRequestData startRequestData = values.Pop();
+            HideoutSingleProductionStartRequestData startRequestData = values.Dequeue();
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
@@ -143,9 +156,9 @@ namespace HideoutAutomation.Server
 
             if (data.AreaProductions.ContainsKey(area.Value) == false)
                 data.AreaProductions.Add(area.Value, []);
-            if (data.AreaProductions.TryGetValue(area.Value, out Stack<HideoutSingleProductionStartRequestData>? value) == false)
+            if (data.AreaProductions.TryGetValue(area.Value, out Queue<HideoutSingleProductionStartRequestData>? value) == false)
                 return ValueTask.FromResult(false);
-            value.Push(requestData);
+            value.Enqueue(requestData);
             hideoutAutomationStore.Set(profileId);
             return ValueTask.FromResult(true);
         }
@@ -250,7 +263,7 @@ namespace HideoutAutomation.Server
 
         private int stackCount(HideoutAutomationData data, HideoutAreas area, MongoId recipeId)
         {
-            if (data.AreaProductions.TryGetValue(area, out Stack<HideoutSingleProductionStartRequestData>? value))
+            if (data.AreaProductions.TryGetValue(area, out Queue<HideoutSingleProductionStartRequestData>? value))
                 return value.Where(psd => psd.RecipeId == recipeId).Count();
             return 0;
         }

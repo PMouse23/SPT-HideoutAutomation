@@ -11,9 +11,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 #nullable enable
 
@@ -40,6 +42,8 @@ namespace HideoutAutomation.MonoBehaviours
         private bool? lastRemoveSkillRequirements = null;
         private bool? lastRemoveTraderRequirements = null;
         private DateTime? lastRun = null;
+
+        private List<SimpleStashPanel> simpleStashPanels = [];
 
         public void Start()
         {
@@ -79,6 +83,16 @@ namespace HideoutAutomation.MonoBehaviours
             this.startCoroutine();
         }
 
+        internal void AddSimpleStashPanel(SimpleStashPanel simpleStashPanel)
+        {
+            this.simpleStashPanels.Add(simpleStashPanel);
+        }
+
+        internal void RemoveSimpleStashPanel(SimpleStashPanel simpleStashPanel)
+        {
+            this.simpleStashPanels.Remove(simpleStashPanel);
+        }
+
         private static string addSpaces(string input, int length)
         {
             if (input == null)
@@ -100,6 +114,22 @@ namespace HideoutAutomation.MonoBehaviours
             else
                 str = count.ToString();
             return addSpaces(str, length);
+        }
+
+        private static void forceScrollRefresh(ScrollRect? scroll, float verticalNormalizedPosition)
+        {
+            if (scroll == null)
+                return;
+
+            scroll.verticalNormalizedPosition = verticalNormalizedPosition;
+        }
+
+        private static ScrollRect? getStashScroll(SimpleStashPanel panel)
+        {
+            FieldInfo field = typeof(SimpleStashPanel)
+                .GetField("_stashScroll", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            return field?.GetValue(panel) as ScrollRect;
         }
 
         private bool CanFindAllItems(IEnumerable<string> itemIds)
@@ -190,6 +220,18 @@ namespace HideoutAutomation.MonoBehaviours
                                     this.hideoutInProgressContribute(data, itemRequirements);
                                     foreach (string contributionMessage in contributionMessages)
                                         LogHelper.LogInfoWithNotification(contributionMessage);
+                                    //HACK finally found a way to hard refresh the draw of SimpleStashPanel.
+                                    foreach (SimpleStashPanel simpleStashPanel in this.simpleStashPanels)
+                                    {
+                                        ScrollRect? scroll = getStashScroll(simpleStashPanel);
+                                        float origionalPosition = scroll?.verticalNormalizedPosition ?? 1.0f;
+                                        yield return null; //EndOfFrame
+                                        forceScrollRefresh(scroll, Mathf.Clamp01(origionalPosition - 0.1f));
+                                        yield return null; //EndOfFrame
+                                        forceScrollRefresh(scroll, Mathf.Clamp01(origionalPosition + 0.2f));
+                                        yield return null; //EndOfFrame
+                                        forceScrollRefresh(scroll, origionalPosition);
+                                    }
                                 }
                                 yield return new WaitForSeconds(0.5f);
                             }

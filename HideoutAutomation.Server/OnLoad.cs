@@ -11,7 +11,9 @@ namespace HideoutAutomation.Server
         Task IOnLoad.OnLoad()
         {
             new GameStart().Enable();
+            new MoveItem().Enable();
             new SingleProductionStart().Enable();
+            new UpgradeComplete().Enable();
 
             return Task.CompletedTask;
         }

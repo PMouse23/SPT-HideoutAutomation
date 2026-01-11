@@ -57,6 +57,10 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Libraries\EscapeFromTarkov_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Libraries\EscapeFromTarkov_Data\Managed\UnityEngine.UIModule.dll</HintPath>
@@ -120,11 +124,14 @@
     <Compile Include="Patches\View\ProduceView_Close.cs" />
     <Compile Include="Patches\View\ProduceView_Show.cs" />
     <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
+    <Compile Include="Patches\View\SimpleStashPanel_Close.cs" />
+    <Compile Include="Patches\View\SimpleStashPanel_Show.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Production\ProductionBuild.cs" />
     <Compile Include="Production\ProductionBuildStoreModel.cs" />
     <Compile Include="Production\ProductionService.cs" />
     <Compile Include="Production\Requests\AreaCountRequest.cs" />
+    <Compile Include="Production\Requests\FindProductionRequest.cs" />
     <Compile Include="Production\Requests\NextProductionRequest.cs" />
     <Compile Include="Production\Requests\ProductionCountRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
