@@ -131,6 +131,7 @@
     <Compile Include="Production\ProductionBuildStoreModel.cs" />
     <Compile Include="Production\ProductionService.cs" />
     <Compile Include="Production\Requests\AreaCountRequest.cs" />
+    <Compile Include="Production\Requests\FindProductionRequest.cs" />
     <Compile Include="Production\Requests\NextProductionRequest.cs" />
     <Compile Include="Production\Requests\ProductionCountRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

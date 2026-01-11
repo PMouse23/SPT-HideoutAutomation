@@ -17,8 +17,9 @@ namespace HideoutAutomation.Server
         new RouteAction<NextProductionRequestData>("/hideoutautomation/StartFromStack",
                  async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.StartFromStack(sessionId, requestData))!),
         new RouteAction<FindItemsRequestData>("/hideoutautomation/CanFindAllItems",
-            async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.CanFindAllItems(sessionId, requestData))!)
-
+            async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.CanFindAllItems(sessionId, requestData))!),
+        new RouteAction<FindProductionRequestData>("/hideoutautomation/CanFindProduction",
+            async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.CanFindProduction(sessionId, requestData))!),
         ])
     {
     }

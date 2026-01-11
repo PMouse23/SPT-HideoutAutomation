@@ -60,6 +60,19 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(true);
         }
 
+        public ValueTask<bool> CanFindProduction(MongoId sessionId, FindProductionRequestData requestData)
+        {
+            if (requestData.SchemeId == null)
+                return ValueTask.FromResult(false);
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(false);
+            bool? hasProduction = pmcData.Hideout?.Production?.Values.Any(productionInProfile => productionInProfile != null && productionInProfile.RecipeId == requestData.SchemeId);
+            if (hasProduction == null)
+                return ValueTask.FromResult(false);
+            return ValueTask.FromResult(hasProduction.Value);
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
