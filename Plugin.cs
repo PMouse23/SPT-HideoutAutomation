@@ -54,6 +54,8 @@ namespace HideoutAutomation
             new ProduceView_Close().Enable();
             new ProduceView_Show().Enable();
             new ProduceView_UpdateView().Enable();
+            new SimpleStashPanel_Close().Enable();
+            new SimpleStashPanel_Show().Enable();
         }
 
         private void global_SettingChanged(object sender, EventArgs e)
