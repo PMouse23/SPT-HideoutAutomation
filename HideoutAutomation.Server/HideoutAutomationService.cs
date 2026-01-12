@@ -24,6 +24,7 @@ namespace HideoutAutomation.Server
         HideoutAutomationStore hideoutAutomationStore,
         DatabaseService databaseService,
         HideoutController hideoutController,
+        HideoutHelper hideoutHelper,
         InventoryHelper inventoryHelper,
         EventOutputHolder eventOutputHolder
         )
@@ -201,6 +202,33 @@ namespace HideoutAutomation.Server
             if (recipeId == null)
                 return default;
             return this.GetHideoutProduction(recipeId.Value);
+        }
+
+        public void UpdateProductionQueue(MongoId sessionId, PmcData? pmcData)
+        {
+            if (pmcData == null)
+                return;
+
+            HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
+            if (data == null)
+                return;
+            foreach (var areaProduction in data.AreaProductions)
+            {
+                long? timeStamp = null;
+                HideoutAreas area = areaProduction.Key;
+                Queue<HideoutSingleProductionStartRequestData> productions = areaProduction.Value;
+                foreach (var production in productions)
+                {
+                    timeStamp ??= production.Timestamp;
+                    double? time = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true);
+                    if (time != null)
+                        timeStamp += (long)time;
+                    production.Timestamp = timeStamp;
+                }
+            }
+            if (pmcData.Id is not MongoId profileId)
+                return;
+            hideoutAutomationStore.Set(profileId);
         }
 
         private bool areaIsProducing(MongoId sessionId, HideoutAreas area)
