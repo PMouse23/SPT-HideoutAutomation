@@ -74,6 +74,15 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(hasProduction.Value);
         }
 
+        public int CompletedCount(PmcData pmcData, MongoId recipeId)
+        {
+            HideoutAutomationData? hideoutAutomationData = this.GetHideoutAutomationData(pmcData);
+            if (hideoutAutomationData == null)
+                return 0;
+            int count = hideoutAutomationData.CompletedProductions.Count(production => production.RecipeId == recipeId);
+            return count;
+        }
+
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
         {
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
@@ -106,6 +115,16 @@ namespace HideoutAutomation.Server
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
             return startRequestData.RecipeId;
+        }
+
+        public void RemoveCompletedProductions(PmcData pmcData, MongoId recipeId)
+        {
+            HideoutAutomationData? hideoutAutomationData = this.GetHideoutAutomationData(pmcData);
+            if (hideoutAutomationData != null)
+                hideoutAutomationData.CompletedProductions.RemoveAll(production => production.RecipeId == recipeId);
+            if (pmcData.Id is not MongoId profileId)
+                return;
+            hideoutAutomationStore.Set(profileId);
         }
 
         public bool ShouldStack(MongoId sessionId, PmcData pmcData, HideoutSingleProductionStartRequestData requestData)
@@ -232,13 +251,9 @@ namespace HideoutAutomation.Server
                     continue;
                 for (int i = 0; i < completedProductions.Count; i++)
                     productions.Dequeue();
-                if (data.CompletedProductions.ContainsKey(area) == false)
-                    data.CompletedProductions.Add(area, []);
-                if (data.CompletedProductions.TryGetValue(area, out List<HideoutSingleProductionStartRequestData>? completed) == false)
+                if (data.CompletedProductions == null)
                     continue;
-                if (completed == null)
-                    continue;
-                completed.AddRange(completedProductions);
+                data.CompletedProductions.AddRange(completedProductions);
             }
             if (pmcData.Id is not MongoId profileId)
                 return;
