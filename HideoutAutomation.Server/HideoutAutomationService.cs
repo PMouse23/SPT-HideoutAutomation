@@ -208,14 +208,15 @@ namespace HideoutAutomation.Server
         {
             if (pmcData == null)
                 return;
-
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
                 return;
+            long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             foreach (var areaProduction in data.AreaProductions)
             {
                 long? timeStamp = null;
                 HideoutAreas area = areaProduction.Key;
+                List<HideoutSingleProductionStartRequestData> completedProductions = [];
                 Queue<HideoutSingleProductionStartRequestData> productions = areaProduction.Value;
                 foreach (var production in productions)
                 {
@@ -224,7 +225,20 @@ namespace HideoutAutomation.Server
                     if (time != null)
                         timeStamp += (long)time;
                     production.Timestamp = timeStamp;
+                    if (currentTimeStamp > timeStamp)
+                        completedProductions.Add(production);
                 }
+                if (completedProductions.Count == 0)
+                    continue;
+                for (int i = 0; i < completedProductions.Count; i++)
+                    productions.Dequeue();
+                if (data.CompletedProductions.ContainsKey(area) == false)
+                    data.CompletedProductions.Add(area, []);
+                if (data.CompletedProductions.TryGetValue(area, out List<HideoutSingleProductionStartRequestData>? completed) == false)
+                    continue;
+                if (completed == null)
+                    continue;
+                completed.AddRange(completedProductions);
             }
             if (pmcData.Id is not MongoId profileId)
                 return;
