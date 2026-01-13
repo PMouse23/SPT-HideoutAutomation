@@ -74,13 +74,12 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(hasProduction.Value);
         }
 
-        public int CompletedCount(PmcData pmcData, MongoId recipeId)
+        public IEnumerable<MongoId> CompletedProductions(PmcData pmcData)
         {
             HideoutAutomationData? hideoutAutomationData = this.GetHideoutAutomationData(pmcData);
             if (hideoutAutomationData == null)
-                return 0;
-            int count = hideoutAutomationData.CompletedProductions.Count(production => production.RecipeId == recipeId);
-            return count;
+                return [];
+            return hideoutAutomationData.CompletedProductions.Select(production => production.RecipeId);
         }
 
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
@@ -239,10 +238,14 @@ namespace HideoutAutomation.Server
                 Queue<HideoutSingleProductionStartRequestData> productions = areaProduction.Value;
                 foreach (var production in productions)
                 {
-                    timeStamp ??= production.Timestamp;
-                    double? time = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true);
-                    if (time != null)
-                        timeStamp += (long)time;
+                    if (timeStamp == null)
+                        timeStamp = production.Timestamp;
+                    else
+                    {
+                        double? time = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true);
+                        if (time != null)
+                            timeStamp += (long)time;
+                    }
                     production.Timestamp = timeStamp;
                     if (currentTimeStamp > timeStamp)
                         completedProductions.Add(production);
