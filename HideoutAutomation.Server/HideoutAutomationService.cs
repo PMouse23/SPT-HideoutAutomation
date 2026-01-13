@@ -79,7 +79,7 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? hideoutAutomationData = this.GetHideoutAutomationData(pmcData);
             if (hideoutAutomationData == null)
                 return [];
-            return hideoutAutomationData.CompletedProductions.Select(production => production.RecipeId);
+            return hideoutAutomationData.CompletedProductions.ToArray().Select(production => production.RecipeId);
         }
 
         public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
@@ -116,11 +116,11 @@ namespace HideoutAutomation.Server
             return startRequestData.RecipeId;
         }
 
-        public void RemoveCompletedProductions(PmcData pmcData, MongoId recipeId)
+        public void RemoveCompletedProductions(PmcData pmcData)
         {
             HideoutAutomationData? hideoutAutomationData = this.GetHideoutAutomationData(pmcData);
             if (hideoutAutomationData != null)
-                hideoutAutomationData.CompletedProductions.RemoveAll(production => production.RecipeId == recipeId);
+                hideoutAutomationData.CompletedProductions.Clear();
             if (pmcData.Id is not MongoId profileId)
                 return;
             hideoutAutomationStore.Set(profileId);

@@ -33,7 +33,7 @@ namespace HideoutAutomation.Server.Patches
                 return;
             if (databaseService.GetHideout() is not SPTarkov.Server.Core.Models.Spt.Hideout.Hideout hideoutDb)
                 return;
-            IEnumerable<MongoId> completedProductions = hideoutAutomationService.CompletedProductions(pmcData).ToArray();
+            IEnumerable<MongoId> completedProductions = hideoutAutomationService.CompletedProductions(pmcData);
             foreach (MongoId recipeId in completedProductions)
             {
                 HideoutProduction? extra = hideoutDb.Production.Recipes?.FirstOrDefault(r => r.Id == recipeId);
@@ -45,8 +45,8 @@ namespace HideoutAutomation.Server.Patches
                     UnstackRewardIntoValidSize2(extraRecipe, extraItemAndChildrenToSendToPlayer, extraRewardIsPreset);
                     itemAndChildrenToSendToPlayer.AddRange(extraItemAndChildrenToSendToPlayer);
                 }
-                hideoutAutomationService.RemoveCompletedProductions(pmcData, recipeId);
             }
+            hideoutAutomationService.RemoveCompletedProductions(pmcData);
         }
 
         /// <summary>
