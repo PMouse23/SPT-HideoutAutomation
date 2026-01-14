@@ -17,8 +17,6 @@ namespace HideoutAutomation.Server.Patches
 {
     public class UpgradeComplete : AbstractPatch
     {
-        private static int calls = 0;
-
         [PatchPrefix]
         public static bool PatchPrefix(PmcData pmcData, HideoutUpgradeCompleteRequestData request, MongoId sessionID, ItemEventRouterResponse output)
         {
