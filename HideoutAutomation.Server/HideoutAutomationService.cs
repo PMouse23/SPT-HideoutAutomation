@@ -229,6 +229,7 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
                 return;
+            long completionTime = 0;
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             foreach (var areaProduction in data.AreaProductions)
             {
@@ -244,10 +245,13 @@ namespace HideoutAutomation.Server
                     {
                         double? time = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true);
                         if (time != null)
+                        {
                             timeStamp += (long)time;
+                            completionTime = timeStamp.GetValueOrDefault() + (long)time;
+                        }
                     }
                     production.Timestamp = timeStamp;
-                    if (currentTimeStamp > timeStamp)
+                    if (currentTimeStamp > completionTime)
                         completedProductions.Add(production);
                 }
                 if (completedProductions.Count == 0)
