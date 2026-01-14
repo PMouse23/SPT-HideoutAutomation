@@ -233,39 +233,47 @@ namespace HideoutAutomation.Server
             long completionTime = currentTimeStamp;
             foreach (var areaProduction in data.AreaProductions)
             {
-                double prefTime = 0;
+                double previousCraftTime = 0;
                 long? startTimeStamp = null;
+                MongoId? currentRecipeId = null;
                 HideoutAreas area = areaProduction.Key;
+                List<HideoutSingleProductionStartRequestData> openProductions = [];
                 List<HideoutSingleProductionStartRequestData> completedProductions = [];
-                Queue<HideoutSingleProductionStartRequestData> productions = areaProduction.Value;
-                foreach (var production in productions)
+                IEnumerable<HideoutSingleProductionStartRequestData> productionsSorted = areaProduction.Value
+                                                                                                        .GroupBy(p => p.RecipeId)
+                                                                                                        .SelectMany(g => g.OrderBy(p => p.Timestamp));
+                foreach (var production in productionsSorted)
                 {
-                    double craftTime = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true).GetValueOrDefault();
-                    bool isFistInStack = startTimeStamp == null;
-                    if (isFistInStack)
+                    var recipeId = production.RecipeId;
+                    if (currentRecipeId != recipeId)
+                    {
+                        //prefTime = 0; //Use when multiple crafts
+                        //startTimeStamp = null; //Use when multiple crafts
+                        currentRecipeId = recipeId;
+                    }
+                    double craftTime = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, recipeId, true).GetValueOrDefault();
+                    bool isFirstInStack = startTimeStamp == null;
+                    if (isFirstInStack)
                         startTimeStamp = production.Timestamp;
                     else
                     {
-                        startTimeStamp += (long)prefTime;
+                        startTimeStamp += (long)previousCraftTime;
                         production.Timestamp = startTimeStamp;
                     }
                     if (startTimeStamp != null && craftTime > 0)
                         completionTime = startTimeStamp.Value + (long)craftTime;
                     if (currentTimeStamp > completionTime)
                         completedProductions.Add(production);
-                    prefTime = craftTime;
+                    else
+                        openProductions.Add(production);
+                    previousCraftTime = craftTime;
                 }
-                if (completedProductions.Count == 0)
-                    continue;
-                for (int i = 0; i < completedProductions.Count; i++)
-                    productions.Dequeue();
-                if (data.CompletedProductions == null)
-                    continue;
-                data.CompletedProductions.AddRange(completedProductions);
+                data.AreaProductions[area] = new Queue<HideoutSingleProductionStartRequestData>(openProductions.OrderBy(production => production.Timestamp));
+                if (completedProductions.Any() && data.CompletedProductions != null)
+                    data.CompletedProductions.AddRange(completedProductions);
             }
-            if (pmcData.Id is not MongoId profileId)
-                return;
-            hideoutAutomationStore.Set(profileId);
+            if (pmcData.Id is MongoId profileId)
+                hideoutAutomationStore.Set(profileId);
         }
 
         private bool areaIsProducing(MongoId sessionId, HideoutAreas area)
