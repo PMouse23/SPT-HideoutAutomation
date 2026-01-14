@@ -7,6 +7,9 @@ namespace HideoutAutomation.Server.Models
 {
     public record HideoutAutomationData
     {
+        [JsonPropertyName("completedProductions")]
+        public List<HideoutSingleProductionStartRequestData> CompletedProductions { get; set; } = [];
+
         [JsonPropertyName("areaProductions")]
         public Dictionary<HideoutAreas, Queue<HideoutSingleProductionStartRequestData>> AreaProductions { get; set; } = [];
     }
