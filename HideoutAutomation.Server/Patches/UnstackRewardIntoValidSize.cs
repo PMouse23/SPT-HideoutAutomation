@@ -22,7 +22,7 @@ namespace HideoutAutomation.Server.Patches
         [PatchPostfix]
         public static void PatchPostfix(HideoutProduction recipe, List<List<Item>> itemAndChildrenToSendToPlayer, bool rewardIsPreset)
         {
-            PmcData? pmcData = HandleRecipe.LastCalldedPmcData;
+            PmcData? pmcData = HandleRecipe.LastCalledPmcData;
             if (pmcData == null)
                 return;
             if (ServiceLocator.ServiceProvider.GetService<HideoutAutomationService>() is not HideoutAutomationService hideoutAutomationService)
