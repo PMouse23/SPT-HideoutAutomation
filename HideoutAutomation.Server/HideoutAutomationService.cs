@@ -229,30 +229,31 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
                 return;
-            long completionTime = 0;
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long completionTime = currentTimeStamp;
             foreach (var areaProduction in data.AreaProductions)
             {
-                long? timeStamp = null;
+                double prefTime = 0;
+                long? startTimeStamp = null;
                 HideoutAreas area = areaProduction.Key;
                 List<HideoutSingleProductionStartRequestData> completedProductions = [];
                 Queue<HideoutSingleProductionStartRequestData> productions = areaProduction.Value;
                 foreach (var production in productions)
                 {
-                    if (timeStamp == null)
-                        timeStamp = production.Timestamp;
+                    double craftTime = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true).GetValueOrDefault();
+                    bool isFistInStack = startTimeStamp == null;
+                    if (isFistInStack)
+                        startTimeStamp = production.Timestamp;
                     else
                     {
-                        double? time = hideoutHelper.GetAdjustedCraftTimeWithSkills(pmcData, production.RecipeId, true);
-                        if (time != null)
-                        {
-                            timeStamp += (long)time;
-                            completionTime = timeStamp.GetValueOrDefault() + (long)time;
-                        }
+                        startTimeStamp += (long)prefTime;
+                        production.Timestamp = startTimeStamp;
                     }
-                    production.Timestamp = timeStamp;
+                    if (startTimeStamp != null && craftTime > 0)
+                        completionTime = startTimeStamp.Value + (long)craftTime;
                     if (currentTimeStamp > completionTime)
                         completedProductions.Add(production);
+                    prefTime = craftTime;
                 }
                 if (completedProductions.Count == 0)
                     continue;
