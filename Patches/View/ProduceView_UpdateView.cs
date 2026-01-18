@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace HideoutAutomation.Patches.View
@@ -52,24 +53,26 @@ namespace HideoutAutomation.Patches.View
             {
                 var scheme = produceView.Scheme;
                 string schemeId = scheme._id;
+                if (Globals.SpecialShortcut.IsPressed())
+                {
+                    unstackProduction(produceView, schemeId);
+                    return;
+                }
                 scheme.productionTime = (float)produceView.Producer.CalculateProductionTime(scheme);
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
                 bool includeCurrentProduction = true;
                 int inProductionArea = await Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
-                int inStackRecipe = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfoWithNotification($"inProductionArea: {inProductionArea}, inStackRecipe: {inStackRecipe}");
+                        LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
                         produceView.OnStartProducing?.Invoke(schemeId);
-                    if (inProductionArea > 0)
-                        produceView.UpdateStackButton(inStackRecipe + 1);
                 }));
             }
             catch (Exception ex)
@@ -127,7 +130,7 @@ namespace HideoutAutomation.Patches.View
             }
         }
 
-        private static async System.Threading.Tasks.Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
+        private static async Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
         {
             int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
             if (inProduction > 0)
@@ -141,6 +144,13 @@ namespace HideoutAutomation.Patches.View
             startButton.OnClick.AddListener(() => { OnClick(produceView); });
             startButton.Interactable = canStart;
             startButton.gameObject.SetActive(true);
+        }
+
+        private static void unstackProduction(ProduceView produceView, string schemeId)
+        {
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
+            produceView.UpdateStackButton(0); //TODO get stacked
         }
 
         private bool IsTargetMethod(MethodInfo method)

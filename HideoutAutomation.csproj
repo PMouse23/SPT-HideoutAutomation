@@ -123,6 +123,7 @@
     <Compile Include="Patches\View\HideoutProductionRequirementView_Show.cs" />
     <Compile Include="Patches\View\ProduceView_Close.cs" />
     <Compile Include="Patches\View\ProduceView_Show.cs" />
+    <Compile Include="Patches\View\ProduceView_Update.cs" />
     <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
     <Compile Include="Patches\View\SimpleStashPanel_Close.cs" />
     <Compile Include="Patches\View\SimpleStashPanel_Show.cs" />
