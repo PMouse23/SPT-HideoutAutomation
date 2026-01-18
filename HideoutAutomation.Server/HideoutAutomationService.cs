@@ -87,6 +87,28 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
         }
 
+        public ValueTask<StateResponse> GetState(MongoId sessionId, StateRequestData requestData)
+        {
+            StateResponse stateResponse = new StateResponse();
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(stateResponse);
+            HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
+            if (data == null)
+                return ValueTask.FromResult(stateResponse);
+            IEnumerable<IGrouping<MongoId, HideoutSingleProductionStartRequestData>> stacked = data.AreaProductions
+                .SelectMany(queue => queue.Value)
+                .GroupBy(production => production.RecipeId);
+            foreach (var stack in stacked)
+                stateResponse.StackCount.Add(stack.Key, stack.Count());
+            Dictionary<MongoId, Production?>? productions = pmcData.Hideout?.Production;
+            if (productions == null)
+                return ValueTask.FromResult(stateResponse);
+            foreach (KeyValuePair<MongoId, Production?> production in productions)
+                stateResponse.Productions.Add(production.Key);
+            return ValueTask.FromResult(stateResponse);
+        }
+
         public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, HideoutAreas area)
         {
             if (pmcData.Id is not MongoId profileId)
