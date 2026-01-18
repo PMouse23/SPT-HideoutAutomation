@@ -3,6 +3,7 @@ using EFT;
 using EFT.Hideout;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production.Requests;
+using HideoutAutomation.Production.Responses;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using System;
@@ -14,6 +15,8 @@ namespace HideoutAutomation.Production
     internal class ProductionService
     {
         private readonly List<ProduceView> produceViews = [];
+
+        private StateResponse state;
 
         public ProductionService()
         {
@@ -108,6 +111,15 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<int>(response);
         }
 
+        public async Task<StateResponse> GetState()
+        {
+            StateRequest stateRequest = new StateRequest();
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/State", JsonConvert.SerializeObject(stateRequest));
+            StateResponse result = JsonConvert.DeserializeObject<StateResponse>(response);
+            this.state = result;
+            return result;
+        }
+
         public void RemoveProduceView(ProduceView produceView)
         {
             this.produceViews.Remove(produceView);
@@ -142,6 +154,14 @@ namespace HideoutAutomation.Production
         {
             foreach (ProduceView produceView in produceViews)
                 produceView.UpdateView();
+        }
+
+        public StateResponse State
+        {
+            get
+            {
+                return this.state;
+            }
         }
     }
 }

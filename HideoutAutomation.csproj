@@ -125,6 +125,7 @@
     <Compile Include="Patches\View\ProduceView_Show.cs" />
     <Compile Include="Patches\View\ProduceView_Update.cs" />
     <Compile Include="Patches\View\ProduceView_UpdateView.cs" />
+    <Compile Include="Patches\View\ProductionPanel_Show.cs" />
     <Compile Include="Patches\View\SimpleStashPanel_Close.cs" />
     <Compile Include="Patches\View\SimpleStashPanel_Show.cs" />
     <Compile Include="Plugin.cs" />
@@ -135,6 +136,8 @@
     <Compile Include="Production\Requests\FindProductionRequest.cs" />
     <Compile Include="Production\Requests\NextProductionRequest.cs" />
     <Compile Include="Production\Requests\ProductionCountRequest.cs" />
+    <Compile Include="Production\Requests\StateRequest.cs" />
+    <Compile Include="Production\Responses\StateResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
