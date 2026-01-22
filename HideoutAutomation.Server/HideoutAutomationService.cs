@@ -101,6 +101,8 @@ namespace HideoutAutomation.Server
                 .GroupBy(production => production.RecipeId);
             foreach (var stack in stacked)
                 stateResponse.StackCount.Add(stack.Key, stack.Count());
+            foreach (var area in data.AreaProductions)
+                stateResponse.AreaCount.Add(area.Key, area.Value.Count());
             Dictionary<MongoId, Production?>? productions = pmcData.Hideout?.Production;
             if (productions == null)
                 return ValueTask.FromResult(stateResponse);

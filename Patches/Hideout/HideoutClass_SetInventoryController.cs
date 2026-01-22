@@ -15,13 +15,14 @@ namespace HideoutAutomation.Patches.Hideout
         }
 
         [PatchPostfix]
-        private static void PatchPostfix(HideoutClass __instance)
+        private static async void PatchPostfix(HideoutClass __instance)
         {
             if (Singleton<ProductionService>.Instance != null)
                 return;
             Singleton<ProductionService>.Create(new ProductionService());
             if (Globals.Debug)
                 LogHelper.LogInfo($"Created ProductionService");
+            await Singleton<ProductionService>.Instance.GetState();
         }
 
         private bool IsTargetMethod(MethodInfo method)

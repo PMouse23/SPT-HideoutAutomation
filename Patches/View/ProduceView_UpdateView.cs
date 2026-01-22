@@ -67,12 +67,13 @@ namespace HideoutAutomation.Patches.View
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
-                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
+                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, async delegate
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
                         produceView.OnStartProducing?.Invoke(schemeId);
+                    await Singleton<ProductionService>.Instance.GetState();
                 }));
             }
             catch (Exception ex)

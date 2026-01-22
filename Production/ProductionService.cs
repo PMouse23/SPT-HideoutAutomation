@@ -91,6 +91,8 @@ namespace HideoutAutomation.Production
 
         public async Task<int> GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
         {
+            if (this.state.areaCount?.TryGetValue(areaType, out int count) == true)
+                return count;
             AreaCountRequest productionCountRequest = new AreaCountRequest()
             {
                 area = areaType,
@@ -102,6 +104,8 @@ namespace HideoutAutomation.Production
 
         public async Task<int> GetStackCount(string productionId, EAreaType areaType)
         {
+            if (this.state.stackCount?.TryGetValue(productionId, out int productionCount) == true)
+                return productionCount;
             ProductionCountRequest productionCountRequest = new ProductionCountRequest()
             {
                 area = areaType,
