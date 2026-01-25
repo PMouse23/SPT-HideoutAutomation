@@ -8,12 +8,12 @@ namespace HideoutAutomation.Server.Models
     public record StateResponse
     {
         [JsonPropertyName("areaCount")]
-        public Dictionary<HideoutAreas, int> AreaCount = [];
+        public Dictionary<HideoutAreas, int> AreaCount { get; init; } = [];
 
         [JsonPropertyName("productions")]
-        public List<MongoId> Productions = [];
+        public List<MongoId> Productions { get; init; } = [];
 
         [JsonPropertyName("stackCount")]
-        public Dictionary<MongoId, int> StackCount = [];
+        public Dictionary<MongoId, int> StackCount { get; init; } = [];
     }
 }
