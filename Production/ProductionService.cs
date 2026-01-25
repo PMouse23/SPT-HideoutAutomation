@@ -117,8 +117,9 @@ namespace HideoutAutomation.Production
 
         public async Task<StateResponse> GetState()
         {
-            StateRequest stateRequest = new StateRequest();
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/State", JsonConvert.SerializeObject(stateRequest));
+            string response = await RequestHandler.GetJsonAsync("/hideoutautomation/State");
+            if (Globals.Debug)
+                LogHelper.LogInfo($"state: {response}");
             StateResponse result = JsonConvert.DeserializeObject<StateResponse>(response);
             this.state = result;
             return result;

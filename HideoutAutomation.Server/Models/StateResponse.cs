@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace HideoutAutomation.Server.Models
 {
-    public class StateResponse
+    public record StateResponse
     {
         [JsonPropertyName("areaCount")]
         public Dictionary<HideoutAreas, int> AreaCount = [];

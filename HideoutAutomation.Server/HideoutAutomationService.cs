@@ -87,7 +87,7 @@ namespace HideoutAutomation.Server
             return ValueTask.FromResult(this.getHideoutProduction(recipeId));
         }
 
-        public ValueTask<StateResponse> GetState(MongoId sessionId, StateRequestData requestData)
+        public ValueTask<StateResponse> GetState(MongoId sessionId)
         {
             StateResponse stateResponse = new StateResponse();
             PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);

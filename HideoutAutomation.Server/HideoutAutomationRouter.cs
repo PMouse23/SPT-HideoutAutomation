@@ -8,8 +8,8 @@ namespace HideoutAutomation.Server
 {
     [Injectable]
     public class HideoutAutomationRouter(JsonUtil jsonUtil, HideoutAutomationService automationService) : StaticRouter(jsonUtil, [
-        new RouteAction<StateRequestData>("/hideoutautomation/State",
-                 async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.GetState(sessionId, requestData))!),
+        new RouteAction("/hideoutautomation/State",
+                 async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.GetState(sessionId))!),
         new RouteAction<AreaCountRequestData>("/hideoutautomation/AreaCount",
                  async (url, requestData, sessionId, output) => jsonUtil.Serialize(await automationService.AreaCount(sessionId, requestData))!),
         new RouteAction<ProductionCountRequestData>("/hideoutautomation/StackCount",

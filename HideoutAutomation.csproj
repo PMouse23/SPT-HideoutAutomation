@@ -136,7 +136,6 @@
     <Compile Include="Production\Requests\FindProductionRequest.cs" />
     <Compile Include="Production\Requests\NextProductionRequest.cs" />
     <Compile Include="Production\Requests\ProductionCountRequest.cs" />
-    <Compile Include="Production\Requests\StateRequest.cs" />
     <Compile Include="Production\Responses\StateResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
