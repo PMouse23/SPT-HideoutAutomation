@@ -42,12 +42,10 @@ namespace HideoutAutomation.Production
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
-
                     if (this.CanFindProduction(completedSchemeId))
                         await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow);
                     producer.GetItems(completedSchemeId);
-
-                    int count = await this.GetAreaCount(areaType);
+                    int count = this.GetAreaCount(areaType);
                     if (count > 0)
                     {
                         await Task.Delay(500);
@@ -69,6 +67,7 @@ namespace HideoutAutomation.Production
                         }
                     }
 
+                    await Singleton<ProductionService>.Instance.GetState();
                     this.updateProduceViews();
                 }
                 catch (Exception ex)
@@ -83,36 +82,28 @@ namespace HideoutAutomation.Production
             this.produceViews.Add(produceView);
         }
 
-        public async Task<int> GetAreaCount(EAreaType areaType)
+        public int GetAreaCount(EAreaType areaType)
         {
             bool includeCurrentProduction = false;
-            return await this.GetAreaCount(areaType, includeCurrentProduction);
+            return this.GetAreaCount(areaType, includeCurrentProduction);
         }
 
-        public async Task<int> GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
+        public int GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
         {
-            if (this.state.areaCount?.TryGetValue(areaType, out int count) == true)
-                return count;
-            AreaCountRequest productionCountRequest = new AreaCountRequest()
-            {
-                area = areaType,
-                includeCurrentProduction = includeCurrentProduction
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/AreaCount", JsonConvert.SerializeObject(productionCountRequest));
-            return JsonConvert.DeserializeObject<int>(response);
+            if (Globals.Debug && this.state.areaCount == null)
+                LogHelper.LogErrorWithNotification("this.state.areaCount is null.");
+            int count = 0;
+            this.state.areaCount?.TryGetValue(areaType, out count);
+            return count;
         }
 
-        public async Task<int> GetStackCount(string productionId, EAreaType areaType)
+        public int GetStackCount(string productionId)
         {
-            if (this.state.stackCount?.TryGetValue(productionId, out int productionCount) == true)
-                return productionCount;
-            ProductionCountRequest productionCountRequest = new ProductionCountRequest()
-            {
-                area = areaType,
-                recipeId = productionId
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StackCount", JsonConvert.SerializeObject(productionCountRequest));
-            return JsonConvert.DeserializeObject<int>(response);
+            if (Globals.Debug && this.state.stackCount == null)
+                LogHelper.LogErrorWithNotification("this.state.stackCount is null.");
+            int productionCount = 0;
+            this.state.stackCount?.TryGetValue(productionId, out productionCount);
+            return productionCount;
         }
 
         public async Task<StateResponse> GetState()

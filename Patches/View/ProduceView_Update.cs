@@ -1,6 +1,8 @@
-﻿using EFT.Hideout;
+﻿using Comfort.Common;
+using EFT.Hideout;
 using EFT.UI;
 using HarmonyLib;
+using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
 using System.Reflection;
 
@@ -11,9 +13,18 @@ namespace HideoutAutomation.Patches.View
         [PatchPostfix]
         public static void PatchPostfix(ProduceView __instance, DefaultUIButton ____startButton)
         {
+            ProduceView produceView = __instance;
+            if (produceView == null)
+                return;
+            var scheme = produceView.Scheme;
+            if (scheme == null)
+                return;
+            if (scheme.continuous)
+                return;
+            string schemeId = scheme._id;
             DefaultUIButton startButton = ____startButton;
             if (startButton != null)
-                patchStartButton(startButton);
+                patchStartButton(startButton, schemeId);
         }
 
         protected override MethodBase GetTargetMethod()
@@ -21,9 +32,9 @@ namespace HideoutAutomation.Patches.View
             return AccessTools.FirstMethod(typeof(ProduceView), this.isTargetMethod);
         }
 
-        private static void patchStartButton(DefaultUIButton startButton)
+        private static void patchStartButton(DefaultUIButton startButton, string schemeId)
         {
-            int stacked = 0; //TODO get stacked.
+            int stacked = Singleton<ProductionService>.Instance.GetStackCount(schemeId);
             if (Globals.SpecialShortcut.IsPressed())
                 startButton.SetHeaderText($"Unstack ({stacked})");
             else

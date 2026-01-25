@@ -4,7 +4,6 @@ using EFT.Hideout;
 using EFT.InventoryLogic;
 using EFT.UI;
 using HarmonyLib;
-using HideoutAutomation.Extensions;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
@@ -63,7 +62,7 @@ namespace HideoutAutomation.Patches.View
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
                 bool includeCurrentProduction = true;
-                int inProductionArea = await Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
+                int inProductionArea = Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
@@ -73,6 +72,7 @@ namespace HideoutAutomation.Patches.View
                         LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
                         produceView.OnStartProducing?.Invoke(schemeId);
+                    await Task.Delay(500);
                     await Singleton<ProductionService>.Instance.GetState();
                 }));
             }
@@ -83,7 +83,7 @@ namespace HideoutAutomation.Patches.View
         }
 
         [PatchPostfix]
-        private static async void PatchPostfix(ProduceView __instance,
+        private static void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
             CanvasGroup ____viewCanvas)
@@ -101,7 +101,6 @@ namespace HideoutAutomation.Patches.View
                     return;
 
                 string schemeId = scheme._id;
-                EAreaType areaType = (EAreaType)scheme.areaType;
 
                 bool canStart = produceView.Boolean_0
                     && (produceView.Producer.CanStart
@@ -111,13 +110,13 @@ namespace HideoutAutomation.Patches.View
                 if (canStart == false && isProducingThisScheme)
                     canStart = checkRequirementsWithoutTools(scheme.requirements);
 
-                int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+                int stacked = Singleton<ProductionService>.Instance.GetStackCount(schemeId);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
                     patchStartButton(produceView, canStart, stacked, startButton);
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
-                    await patchResultItemIconViewFactory(scheme, schemeId, areaType, resultItemIconViewFactory);
+                    patchResultItemIconViewFactory(scheme, schemeId, stacked + 1, resultItemIconViewFactory);
                 CanvasGroup viewCanvas = ____viewCanvas;
                 if (viewCanvas != null)
                 {
@@ -131,16 +130,14 @@ namespace HideoutAutomation.Patches.View
             }
         }
 
-        private static async Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
+        private static void patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, int inProduction, HideoutItemViewFactory resultItemIconViewFactory)
         {
-            int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
             if (inProduction > 0)
                 resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
         }
 
         private static void patchStartButton(ProduceView produceView, bool canStart, int stacked, DefaultUIButton startButton)
         {
-            startButton.SetHeaderText($"Stack ({stacked})");
             startButton.OnClick.RemoveAllListeners();
             startButton.OnClick.AddListener(() => { OnClick(produceView); });
             startButton.Interactable = canStart;
@@ -151,7 +148,6 @@ namespace HideoutAutomation.Patches.View
         {
             if (Globals.Debug)
                 LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
-            produceView.UpdateStackButton(0); //TODO get stacked
         }
 
         private bool IsTargetMethod(MethodInfo method)
