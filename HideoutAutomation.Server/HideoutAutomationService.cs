@@ -115,6 +115,7 @@ namespace HideoutAutomation.Server
         public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Queue<HideoutSingleProductionStartRequestData> values)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Dequeue();
+            startRequestData.Items?.Clear();
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
@@ -181,7 +182,6 @@ namespace HideoutAutomation.Server
             requestData.Tools?.Clear();
 
             this.takeItems(sessionId, pmcData, requestData);
-            requestData.Items?.Clear();
 
             if (data.AreaProductions.ContainsKey(area.Value) == false)
                 data.AreaProductions.Add(area.Value, []);
