@@ -11,6 +11,7 @@ using SPTarkov.Server.Core.Models.Eft.ItemEvent;
 using SPTarkov.Server.Core.Models.Enums.Hideout;
 using SPTarkov.Server.Core.Routers;
 using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Utils.Cloners;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +27,8 @@ namespace HideoutAutomation.Server
         HideoutController hideoutController,
         HideoutHelper hideoutHelper,
         InventoryHelper inventoryHelper,
-        EventOutputHolder eventOutputHolder
+        EventOutputHolder eventOutputHolder,
+        ICloner cloner
         )
     {
         private const string purifiedWaterRecipeId = "5d5589c1f934db045e6c5492";
@@ -108,14 +110,19 @@ namespace HideoutAutomation.Server
                 return null;
             if (values.Count == 0)
                 return null;
-            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, profileId, values);
+            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, profileId, values, data);
             return recipeId;
         }
 
-        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Queue<HideoutSingleProductionStartRequestData> values)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Queue<HideoutSingleProductionStartRequestData> values, HideoutAutomationData data)
         {
             HideoutSingleProductionStartRequestData startRequestData = values.Dequeue();
-            startRequestData.Items?.Clear();
+            if (startRequestData.Items != null)
+            {
+                foreach (IdWithCount item in startRequestData.Items)
+                    data.ProductionItems.RemoveAll(item => item.Id == item.Id);
+                startRequestData.Items.Clear();
+            }
             startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
@@ -181,7 +188,7 @@ namespace HideoutAutomation.Server
             //HACK don't hand in the tools this is trick at the moment.
             requestData.Tools?.Clear();
 
-            this.takeItems(sessionId, pmcData, requestData);
+            this.takeItems(sessionId, pmcData, requestData, data);
 
             if (data.AreaProductions.ContainsKey(area.Value) == false)
                 data.AreaProductions.Add(area.Value, []);
@@ -334,7 +341,7 @@ namespace HideoutAutomation.Server
             return databaseService.GetHideout().Production.Recipes?.FirstOrDefault(prod => prod.Id == recipeId);
         }
 
-        private void takeItems(MongoId sessionId, PmcData pmcData, HideoutSingleProductionStartRequestData requestData)
+        private void takeItems(MongoId sessionId, PmcData pmcData, HideoutSingleProductionStartRequestData requestData, HideoutAutomationData data)
         {
             List<Item>? items = pmcData.Inventory?.Items;
             if (items == null || requestData.Items == null)
@@ -346,11 +353,17 @@ namespace HideoutAutomation.Server
                 if (item == null)
                     continue;
 
+                Item? clone = cloner.Clone(item);
+
                 if (idWithCount.Count is double count)
                 {
                     ItemEventRouterResponse output = eventOutputHolder.GetOutput(sessionId);
                     inventoryHelper.RemoveItemByCount(pmcData, id, (int)count, sessionId, output);
+                    if (clone?.Upd != null)
+                        clone.Upd.StackObjectsCount = count;
                 }
+                if (clone != null)
+                    data.ProductionItems.Add(clone);
             }
         }
     }
