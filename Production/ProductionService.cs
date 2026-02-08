@@ -131,6 +131,16 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<ProductionBuild>(response);
         }
 
+        public bool Unstack(string schemeId)
+        {
+            UnstackProductionRequest unstackProductionRequest = new UnstackProductionRequest()
+            {
+                recipeId = schemeId
+            };
+            string response = RequestHandler.PutJson("/hideoutautomation/Unstack", JsonConvert.SerializeObject(unstackProductionRequest));
+            return JsonConvert.DeserializeObject<bool>(response);
+        }
+
         private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
         {
             return producer.Schemes.ContainsKey(completedSchemeId) && producer.Schemes[completedSchemeId].continuous;
