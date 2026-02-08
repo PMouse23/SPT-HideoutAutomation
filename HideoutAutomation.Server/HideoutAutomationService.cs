@@ -107,7 +107,7 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? data = this.GetHideoutAutomationData(pmcData);
             if (data == null)
                 return null;
-            if (data.AreaProductions.TryGetValue(area, out Queue<HideoutSingleProductionStartRequestData>? values) == false)
+            if (data.AreaProductions.TryGetValue(area, out LinkedList<HideoutSingleProductionStartRequestData>? values) == false)
                 return null;
             if (values.Count == 0)
                 return null;
@@ -115,9 +115,12 @@ namespace HideoutAutomation.Server
             return recipeId;
         }
 
-        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, Queue<HideoutSingleProductionStartRequestData> values, HideoutAutomationData data)
+        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, LinkedList<HideoutSingleProductionStartRequestData> values, HideoutAutomationData data)
         {
-            HideoutSingleProductionStartRequestData startRequestData = values.Dequeue();
+            HideoutSingleProductionStartRequestData? startRequestData = values.FirstOrDefault();
+            if (startRequestData == null)
+                return null;
+            values.RemoveFirst();
             if (startRequestData.Items != null)
             {
                 foreach (IdWithCount item in startRequestData.Items)
@@ -193,9 +196,9 @@ namespace HideoutAutomation.Server
 
             if (data.AreaProductions.ContainsKey(area.Value) == false)
                 data.AreaProductions.Add(area.Value, []);
-            if (data.AreaProductions.TryGetValue(area.Value, out Queue<HideoutSingleProductionStartRequestData>? value) == false)
+            if (data.AreaProductions.TryGetValue(area.Value, out LinkedList<HideoutSingleProductionStartRequestData>? value) == false)
                 return ValueTask.FromResult(false);
-            value.Enqueue(requestData);
+            value.AddLast(requestData);
             hideoutAutomationStore.Set(profileId);
             return ValueTask.FromResult(true);
         }
@@ -239,7 +242,7 @@ namespace HideoutAutomation.Server
             HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
             if (data == null)
                 return ValueTask.FromResult(false);
-            if (data.AreaProductions.TryGetValue(area.Value, out Queue<HideoutSingleProductionStartRequestData>? values) == false)
+            if (data.AreaProductions.TryGetValue(area.Value, out LinkedList<HideoutSingleProductionStartRequestData>? values) == false)
                 return ValueTask.FromResult(false);
             HideoutSingleProductionStartRequestData? unstacked = values.LastOrDefault(production => production.RecipeId == recipeId);
             if (unstacked == null || unstacked.Items == null)
@@ -255,6 +258,7 @@ namespace HideoutAutomation.Server
                     inventoryHelper.AddItemsToStash(sessionId, new AddItemsDirectRequest() { FoundInRaid = false, ItemsWithModsToAdd = new List<List<Item>>() { new List<Item>() { itemToReturn } }, UseSortingTable = false }, pmcData, output);
                 data.ProductionItems.RemoveAll(item => item.Id == item.Id);
             }
+            values.RemoveLast();
             return ValueTask.FromResult(false);
         }
 
@@ -304,7 +308,7 @@ namespace HideoutAutomation.Server
                         openProductions.Add(production);
                     previousCraftTime = craftTime;
                 }
-                data.AreaProductions[area] = new Queue<HideoutSingleProductionStartRequestData>(openProductions.OrderBy(production => production.Timestamp));
+                data.AreaProductions[area] = new LinkedList<HideoutSingleProductionStartRequestData>(openProductions.OrderBy(production => production.Timestamp));
                 if (completedProductions.Any() && data.CompletedProductions != null)
                     data.CompletedProductions.AddRange(completedProductions);
             }
