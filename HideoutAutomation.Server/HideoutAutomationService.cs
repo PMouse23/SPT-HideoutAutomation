@@ -7,6 +7,7 @@ using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.Hideout;
+using SPTarkov.Server.Core.Models.Eft.Inventory;
 using SPTarkov.Server.Core.Models.Eft.ItemEvent;
 using SPTarkov.Server.Core.Models.Enums.Hideout;
 using SPTarkov.Server.Core.Routers;
@@ -227,6 +228,34 @@ namespace HideoutAutomation.Server
             if (recipeId == null)
                 return default;
             return this.GetHideoutProduction(recipeId.Value);
+        }
+
+        public ValueTask<bool> Unstack(MongoId sessionId, UnstackProductionRequestData requestData)
+        {
+            MongoId recipeId = requestData.RecipeId;
+            HideoutAreas? area = this.getHideoutArea(recipeId);
+            if (area == null)
+                return ValueTask.FromResult(false);
+            HideoutAutomationData? data = this.GetHideoutAutomationData(sessionId);
+            if (data == null)
+                return ValueTask.FromResult(false);
+            if (data.AreaProductions.TryGetValue(area.Value, out Queue<HideoutSingleProductionStartRequestData>? values) == false)
+                return ValueTask.FromResult(false);
+            HideoutSingleProductionStartRequestData? unstacked = values.LastOrDefault(production => production.RecipeId == recipeId);
+            if (unstacked == null || unstacked.Items == null)
+                return ValueTask.FromResult(false);
+            PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
+            if (pmcData == null)
+                return ValueTask.FromResult(false);
+            ItemEventRouterResponse output = eventOutputHolder.GetOutput(sessionId);
+            foreach (IdWithCount item in unstacked.Items)
+            {
+                Item? itemToReturn = data.ProductionItems.FirstOrDefault(item => item.Id == item.Id);
+                if (itemToReturn != null)
+                    inventoryHelper.AddItemsToStash(sessionId, new AddItemsDirectRequest() { FoundInRaid = false, ItemsWithModsToAdd = new List<List<Item>>() { new List<Item>() { itemToReturn } }, UseSortingTable = false }, pmcData, output);
+                data.ProductionItems.RemoveAll(item => item.Id == item.Id);
+            }
+            return ValueTask.FromResult(false);
         }
 
         public void UpdateProductionQueue(MongoId sessionId, PmcData? pmcData)
