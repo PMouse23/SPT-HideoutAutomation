@@ -35,7 +35,7 @@ namespace HideoutAutomation.Production
 
                     if (isContinuousScheme(producer, completedSchemeId))
                     {
-                        this.updateProduceViews();
+                        this.UpdateProduceViews();
                         return;
                     }
 
@@ -68,7 +68,7 @@ namespace HideoutAutomation.Production
                     }
 
                     await Singleton<ProductionService>.Instance.GetState();
-                    this.updateProduceViews();
+                    this.UpdateProduceViews();
                 }
                 catch (Exception ex)
                 {
@@ -141,6 +141,12 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<bool>(response);
         }
 
+        public void UpdateProduceViews()
+        {
+            foreach (ProduceView produceView in produceViews)
+                produceView.UpdateView();
+        }
+
         private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
         {
             return producer.Schemes.ContainsKey(completedSchemeId) && producer.Schemes[completedSchemeId].continuous;
@@ -154,12 +160,6 @@ namespace HideoutAutomation.Production
             };
             string response = RequestHandler.PutJson("/hideoutautomation/CanFindProduction", JsonConvert.SerializeObject(findProductionRequest));
             return JsonConvert.DeserializeObject<bool>(response);
-        }
-
-        private void updateProduceViews()
-        {
-            foreach (ProduceView produceView in produceViews)
-                produceView.UpdateView();
         }
 
         public StateResponse State
