@@ -14,6 +14,8 @@ namespace HideoutAutomation.Patches.View
         [PatchPostfix]
         public static void PatchPostfix(ProduceView __instance)
         {
+            if (Globals.ProductionStacking == false)
+                return;
             try
             {
                 ProduceView produceView = __instance;

@@ -16,6 +16,9 @@ namespace HideoutAutomation.Patches.View
         [PatchPostfix]
         private static void PatchPostfix(HideoutProductionRequirementView __instance, ItemRequirement requirement, HideoutItemViewFactory ____itemViewFactory)
         {
+            if (Globals.ProductionStacking == false)
+                return;
+
             HideoutItemViewFactory hideoutItemViewFactory = ____itemViewFactory;
             if (hideoutItemViewFactory != null)
             {

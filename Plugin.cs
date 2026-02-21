@@ -19,6 +19,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
         private ConfigEntry<bool> enableHideoutInProgressSupport;
+        private ConfigEntry<bool> enableProductionStacking;
         private ConfigEntry<bool> onlyContributeWhenAreaRequirementsAreMet;
         private ConfigEntry<bool> removeAreaRequirements;
         private ConfigEntry<bool> removeCurrencyRequirements;
@@ -101,6 +102,9 @@ namespace HideoutAutomation
             this.removeTraderRequirements = this.Config.Bind("Payment", "RemoveTraderRequirements", false, "Remove the trader requirements for construction and upgrades.");
             this.removeTraderRequirements.SettingChanged += this.global_SettingChanged;
 
+            this.enableProductionStacking = this.Config.Bind("ProductionStacking", "EnableProductionStacking", true, "(experimental) enable production stacking.");
+            this.enableProductionStacking.SettingChanged += this.global_SettingChanged;
+
             this.enableHideoutInProgressSupport = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressSupport", true, "Experimental (HIP mod support). Disable when problems occur.");
             this.enableHideoutInProgressSupport.SettingChanged += this.global_SettingChanged;
 
@@ -126,6 +130,7 @@ namespace HideoutAutomation
             Globals.UseDialogWindow = this.useDialogWindow.Value;
             Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
             Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
+            Globals.ProductionStacking = this.enableProductionStacking.Value;
         }
     }
 }
