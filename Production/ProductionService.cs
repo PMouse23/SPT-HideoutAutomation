@@ -51,7 +51,7 @@ namespace HideoutAutomation.Production
                         await Task.Delay(500);
                         if (Globals.Debug)
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
-                        ProductionBuild next = await this.StartFromStack(areaType);
+                        ProductionBuild next = await this.startFromStack(areaType);
                         if (next != null)
                         {
                             if (Globals.Debug)
@@ -121,16 +121,6 @@ namespace HideoutAutomation.Production
             this.produceViews.Remove(produceView);
         }
 
-        public async Task<ProductionBuild> StartFromStack(EAreaType areaType)
-        {
-            NextProductionRequest nextProductionRequest = new NextProductionRequest()
-            {
-                area = areaType,
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StartFromStack", JsonConvert.SerializeObject(nextProductionRequest));
-            return JsonConvert.DeserializeObject<ProductionBuild>(response);
-        }
-
         public bool Unstack(string schemeId)
         {
             UnstackProductionRequest unstackProductionRequest = new UnstackProductionRequest()
@@ -160,6 +150,16 @@ namespace HideoutAutomation.Production
             };
             string response = RequestHandler.PutJson("/hideoutautomation/CanFindProduction", JsonConvert.SerializeObject(findProductionRequest));
             return JsonConvert.DeserializeObject<bool>(response);
+        }
+
+        private async Task<ProductionBuild> startFromStack(EAreaType areaType)
+        {
+            NextProductionRequest nextProductionRequest = new NextProductionRequest()
+            {
+                area = areaType,
+            };
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StartFromStack", JsonConvert.SerializeObject(nextProductionRequest));
+            return JsonConvert.DeserializeObject<ProductionBuild>(response);
         }
 
         public StateResponse State
