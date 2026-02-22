@@ -7,7 +7,6 @@ using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.Hideout;
-using SPTarkov.Server.Core.Models.Eft.Inventory;
 using SPTarkov.Server.Core.Models.Eft.ItemEvent;
 using SPTarkov.Server.Core.Models.Enums.Hideout;
 using SPTarkov.Server.Core.Routers;
@@ -28,6 +27,7 @@ namespace HideoutAutomation.Server
         HideoutController hideoutController,
         HideoutHelper hideoutHelper,
         InventoryHelper inventoryHelper,
+        RagfairServerHelper ragfairServerHelper,
         EventOutputHolder eventOutputHolder,
         ICloner cloner
         )
@@ -250,14 +250,15 @@ namespace HideoutAutomation.Server
             PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
             if (pmcData == null)
                 return ValueTask.FromResult(false);
-            ItemEventRouterResponse output = eventOutputHolder.GetOutput(sessionId);
+            List<Item> itemsToReturn = new List<Item>();
             foreach (IdWithCount item in unstacked.Items)
             {
-                Item? itemToReturn = data.ProductionItems.FirstOrDefault(item => item.Id == item.Id);
+                Item? itemToReturn = data.ProductionItems.LastOrDefault(item => item.Id == item.Id);
                 if (itemToReturn != null)
-                    inventoryHelper.AddItemsToStash(sessionId, new AddItemsDirectRequest() { FoundInRaid = false, ItemsWithModsToAdd = new List<List<Item>>() { new List<Item>() { itemToReturn } }, UseSortingTable = false }, pmcData, output);
+                    itemsToReturn.Add(itemToReturn);
                 data.ProductionItems.RemoveAll(item => item.Id == item.Id);
             }
+            ragfairServerHelper.ReturnItems(sessionId, itemsToReturn);
             values.RemoveLast();
             return ValueTask.FromResult(false);
         }
