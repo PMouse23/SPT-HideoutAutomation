@@ -57,7 +57,6 @@ namespace HideoutAutomation.Patches.View
                     unstackProduction(produceView, schemeId);
                     return;
                 }
-                scheme.productionTime = (float)produceView.Producer.CalculateProductionTime(scheme);
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
@@ -65,6 +64,13 @@ namespace HideoutAutomation.Patches.View
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
+                if (inProductionArea == 0)
+                {
+                    scheme.productionTime = Singleton<ProductionService>.Instance.CalculateProductionTime(schemeId, () =>
+                    {
+                        return (float)produceView.Producer.CalculateProductionTime(scheme);
+                    });
+                }
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, async delegate
                 {
                     if (Globals.Debug)

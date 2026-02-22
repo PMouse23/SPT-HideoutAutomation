@@ -15,7 +15,7 @@ namespace HideoutAutomation.Production
     internal class ProductionService
     {
         private readonly List<ProduceView> produceViews = [];
-
+        private readonly Dictionary<string, float> schemeProductonTimes = new Dictionary<string, float>();
         private StateResponse state;
 
         public ProductionService()
@@ -60,8 +60,12 @@ namespace HideoutAutomation.Production
                             var producingItem = next.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
                             if (producingItem != null && producingItem.SchemeId != null)
                             {
+                                next.productionTime = Singleton<ProductionService>.Instance.CalculateProductionTime(producingItem.SchemeId, () =>
+                                {
+                                    return (float)producer.CalculateProductionTime(next);
+                                });
                                 if (Globals.Debug)
-                                    LogHelper.LogInfoWithNotification($"producingItem {producingItem.SchemeId}.");
+                                    LogHelper.LogInfoWithNotification($"producingItem {next.Id} {next.productionTime}.");
                                 producer.StartProducing(next);
                             }
                         }
@@ -80,6 +84,15 @@ namespace HideoutAutomation.Production
         public void AddProduceView(ProduceView produceView)
         {
             this.produceViews.Add(produceView);
+        }
+
+        public float CalculateProductionTime(string schemeId, Func<float> calculateProductionTimeCallback)
+        {
+            if (this.schemeProductonTimes.ContainsKey(schemeId))
+                return this.schemeProductonTimes[schemeId];
+            float producingTime = calculateProductionTimeCallback.Invoke();
+            this.schemeProductonTimes.Add(schemeId, producingTime);
+            return producingTime;
         }
 
         public int GetAreaCount(EAreaType areaType)
