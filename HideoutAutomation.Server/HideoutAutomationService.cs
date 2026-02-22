@@ -91,7 +91,12 @@ namespace HideoutAutomation.Server
             foreach (var stack in stacked)
                 stateResponse.StackCount.Add(stack.Key, stack.Count());
             foreach (var area in data.AreaProductionsAndPayment)
-                stateResponse.AreaCount.Add(area.Key, area.Value.Count());
+            {
+                bool areaIsProducing = this.areaIsProducing(sessionId, area.Key);
+                int areaCount = areaIsProducing ? 1 : 0;
+                areaCount += area.Value.Count();
+                stateResponse.AreaCount.Add(area.Key, areaCount);
+            }
             Dictionary<MongoId, Production?>? productions = pmcData.Hideout?.Production;
             if (productions == null)
                 return ValueTask.FromResult(stateResponse);

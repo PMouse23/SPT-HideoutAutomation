@@ -84,12 +84,6 @@ namespace HideoutAutomation.Production
 
         public int GetAreaCount(EAreaType areaType)
         {
-            bool includeCurrentProduction = false;
-            return this.GetAreaCount(areaType, includeCurrentProduction);
-        }
-
-        public int GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
-        {
             if (Globals.Debug && this.state.areaCount == null)
                 LogHelper.LogErrorWithNotification("this.state.areaCount is null.");
             int count = 0;

@@ -61,8 +61,7 @@ namespace HideoutAutomation.Patches.View
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
-                bool includeCurrentProduction = true;
-                int inProductionArea = Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
+                int inProductionArea = Singleton<ProductionService>.Instance.GetAreaCount(areaType);
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
