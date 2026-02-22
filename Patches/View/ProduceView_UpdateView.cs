@@ -148,8 +148,11 @@ namespace HideoutAutomation.Patches.View
         {
             if (Globals.Debug)
                 LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
-            Singleton<ProductionService>.Instance.Unstack(schemeId);
-            Singleton<ProductionService>.Instance.UpdateProduceViews();
+            if (Singleton<ProductionService>.Instance.Unstack(schemeId))
+            {
+                Singleton<ProductionService>.Instance.State.stackCount[schemeId]--;
+                produceView.UpdateView();
+            }
         }
 
         private bool IsTargetMethod(MethodInfo method)
