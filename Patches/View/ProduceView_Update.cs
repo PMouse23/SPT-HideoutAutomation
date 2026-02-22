@@ -36,7 +36,14 @@ namespace HideoutAutomation.Patches.View
         {
             int stacked = Singleton<ProductionService>.Instance.GetStackCount(schemeId);
             if (Globals.SpecialShortcut.IsPressed())
-                startButton.SetHeaderText($"Unstack ({stacked})");
+            {
+                if (stacked > 0)
+                {
+                    startButton.SetHeaderText($"Unstack ({stacked})");
+                    startButton.Interactable = true;
+                    startButton.gameObject.SetActive(true);
+                }
+            }
             else
                 startButton.SetHeaderText($"Stack ({stacked})");
         }
