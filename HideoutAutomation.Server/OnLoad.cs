@@ -18,6 +18,9 @@ namespace HideoutAutomation.Server
             new UnstackRewardIntoValidSize().Enable();
             new UpgradeComplete().Enable();
 
+            foreach (var (sessionId, profile) in saveServer.GetProfiles())
+                hideoutAutomationService.MoveOldtoNewQueue(sessionId, profile.CharacterData?.PmcData);
+
             return Task.CompletedTask;
         }
     }
