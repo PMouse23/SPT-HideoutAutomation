@@ -272,7 +272,7 @@ namespace HideoutAutomation.Server
             List<Item> itemsToReturn = unstacked.PaymentItems;
             ragfairServerHelper.ReturnItems(sessionId, itemsToReturn);
             values.RemoveLast();
-            return ValueTask.FromResult(false);
+            return ValueTask.FromResult(true);
         }
 
         public void UpdateProductionQueue(MongoId sessionId, PmcData? pmcData)
