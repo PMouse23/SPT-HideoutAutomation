@@ -60,7 +60,7 @@ namespace HideoutAutomation.Production
                             var producingItem = next.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
                             if (producingItem != null && producingItem.SchemeId != null)
                             {
-                                next.productionTime = Singleton<ProductionService>.Instance.CalculateProductionTime(producingItem.SchemeId, () =>
+                                next.productionTime = this.CalculateProductionTime(producingItem.SchemeId, () =>
                                 {
                                     return (float)producer.CalculateProductionTime(next);
                                 });
@@ -71,7 +71,7 @@ namespace HideoutAutomation.Production
                         }
                     }
 
-                    await Singleton<ProductionService>.Instance.GetState();
+                    await this.GetState();
                     this.UpdateProduceViews();
                 }
                 catch (Exception ex)
