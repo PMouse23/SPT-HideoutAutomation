@@ -76,7 +76,7 @@ namespace HideoutAutomation.Patches.View
                     if (Globals.Debug)
                         LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
-                        produceView.OnStartProducing?.Invoke(schemeId);
+                        produceView.Producer.StartProducing(scheme);
                     await Task.Delay(500);
                     await Singleton<ProductionService>.Instance.GetState();
                 }));
