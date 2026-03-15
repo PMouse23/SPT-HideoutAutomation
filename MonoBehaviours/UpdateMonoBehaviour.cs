@@ -23,6 +23,28 @@ namespace HideoutAutomation.MonoBehaviours
 {
     internal class UpdateMonoBehaviour : MonoBehaviour
     {
+        private sealed class HIPContributionCandidate
+        {
+            public HIPContributionCandidate(AreaData areaData, EAreaType areaType, ItemRequirement[] itemRequirements, List<string> itemIds, List<string> contributionMessages)
+            {
+                this.AreaData = areaData;
+                this.AreaType = areaType;
+                this.ItemRequirements = itemRequirements;
+                this.ItemIds = itemIds;
+                this.ContributionMessages = contributionMessages;
+            }
+
+            public AreaData AreaData { get; }
+
+            public EAreaType AreaType { get; }
+
+            public List<string> ContributionMessages { get; }
+
+            public List<string> ItemIds { get; }
+
+            public ItemRequirement[] ItemRequirements { get; }
+        }
+
         private static readonly EAreaStatus[] interactableStatuses =
         [
             EAreaStatus.LockedToConstruct,
@@ -35,6 +57,8 @@ namespace HideoutAutomation.MonoBehaviours
         private CancellationToken? cancellationToken;
         private CancellationTokenSource? cancellationTokenSource;
         private bool didInvestigate = false;
+        private bool hipContributionDeniedThisCycle = false;
+        private bool hipContributionScanCompleted = false;
         private bool inDialog = false;
         private bool? lastRemoveAreaRequirements = null;
         private bool? lastRemoveCurrencyRequirements = null;
@@ -42,6 +66,8 @@ namespace HideoutAutomation.MonoBehaviours
         private bool? lastRemoveSkillRequirements = null;
         private bool? lastRemoveTraderRequirements = null;
         private DateTime? lastRun = null;
+        private readonly List<HIPContributionCandidate> pendingHIPContributionCandidates = [];
+        private bool wasInRaid = false;
 
         private List<SimpleStashPanel> simpleStashPanels = [];
 
@@ -52,12 +78,21 @@ namespace HideoutAutomation.MonoBehaviours
 
         public void Update()
         {
-            if (RaidHelper.HasRaidLoaded())
+            bool hasRaidLoaded = RaidHelper.HasRaidLoaded();
+            if (hasRaidLoaded)
             {
+                this.wasInRaid = true;
                 this.stopCoroutines();
                 return;
             }
-            else if (this.cancellationToken?.IsCancellationRequested == true)
+
+            if (this.wasInRaid)
+            {
+                this.wasInRaid = false;
+                this.resetHIPContributionConfirmationCycle();
+            }
+
+            if (this.cancellationToken?.IsCancellationRequested == true)
                 this.startCoroutine();
 
             bool shouldInvestigate = Globals.Debug && Globals.InvestigateKeys.IsPressed();
@@ -78,6 +113,7 @@ namespace HideoutAutomation.MonoBehaviours
             this.stopCoroutines();
 
             this.declinedAreaUpdates.Clear();
+            this.resetHIPContributionConfirmationCycle();
             LogHelper.LogInfoWithNotification($"Declined Area(s) reset.");
 
             this.startCoroutine();
@@ -177,6 +213,13 @@ namespace HideoutAutomation.MonoBehaviours
                     }
                     if (hideout != null && hideout.AreaDatas.Count > 0)
                     {
+                        bool isHIPEnabled = Globals.IsHideoutInProgress
+                            && Globals.IsHideoutInProgressSupportEnabled;
+                        bool shouldScanHIPContributions = isHIPEnabled
+                            && Globals.EnableHIPContributionConfirmation
+                            && this.hipContributionScanCompleted == false
+                            && this.hipContributionDeniedThisCycle == false;
+
                         foreach (AreaData data in hideout.AreaDatas)
                         {
                             if (this.cancellationTokenSource.IsCancellationRequested)
@@ -187,53 +230,32 @@ namespace HideoutAutomation.MonoBehaviours
                             if (Globals.Debug)
                                 LogHelper.LogInfo($"EAreaType: {areaType}, Status={status}");
                             List<Requirement> requirements = this.removeRequirements(data);
-                            if (Globals.IsHideoutInProgress
-                                && Globals.IsHideoutInProgressSupportEnabled
+                            bool canProcessHIPContribution = isHIPEnabled
                                 && interactableStatuses.Contains(status)
-                                && this.hideoutInProgressRequirementsAreMet(requirements))
+                                && this.hideoutInProgressRequirementsAreMet(requirements);
+                            if (canProcessHIPContribution)
                             {
-                                if (Globals.Debug)
-                                    LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
-
-                                List<string> itemIds = [];
-                                List<string> contributionMessages = [];
-                                ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
-                                foreach (ItemRequirement itemRequirement in itemRequirements)
+                                if (Globals.EnableHIPContributionConfirmation)
                                 {
-                                    var contributions = hideout.method_21([itemRequirement]);
-                                    if (contributions.Count > 0)
+                                    if (shouldScanHIPContributions)
                                     {
-                                        if (Globals.Debug)
-                                            LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
-                                        foreach (var contribution in contributions)
-                                        {
-                                            string itemId = contribution.Item.Id;
-                                            string contributionMessage = $"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.";
-                                            itemIds.Add(itemId);
-                                            contributionMessages.Add(contributionMessage);
-                                        }
+                                        HIPContributionCandidate? candidate = this.createHIPContributionCandidate(hideout, data, areaType, requirements);
+                                        if (candidate != null)
+                                            this.pendingHIPContributionCandidates.Add(candidate);
                                     }
                                 }
-                                bool contribute = itemIds.Any() && this.CanFindAllItems(itemIds);
-                                if (contribute)
+                                else
                                 {
-                                    this.hideoutInProgressContribute(data, itemRequirements);
-                                    foreach (string contributionMessage in contributionMessages)
-                                        LogHelper.LogInfoWithNotification(contributionMessage);
-                                    //HACK finally found a way to hard refresh the draw of SimpleStashPanel.
-                                    foreach (SimpleStashPanel simpleStashPanel in this.simpleStashPanels)
+                                    HIPContributionCandidate? candidate = this.createHIPContributionCandidate(hideout, data, areaType, requirements);
+                                    if (candidate != null)
                                     {
-                                        ScrollRect? scroll = getStashScroll(simpleStashPanel);
-                                        float origionalPosition = scroll?.verticalNormalizedPosition ?? 1.0f;
-                                        yield return null; //EndOfFrame
-                                        forceScrollRefresh(scroll, Mathf.Clamp01(origionalPosition - 0.1f));
-                                        yield return null; //EndOfFrame
-                                        forceScrollRefresh(scroll, Mathf.Clamp01(origionalPosition + 0.2f));
-                                        yield return null; //EndOfFrame
-                                        forceScrollRefresh(scroll, origionalPosition);
+                                        this.hideoutInProgressContribute(candidate.AreaData, candidate.ItemRequirements);
+                                        foreach (string msg in candidate.ContributionMessages)
+                                            LogHelper.LogInfoWithNotification(msg);
+                                        yield return this.refreshSimpleStashPanels();
                                     }
+                                    yield return new WaitForSeconds(0.5f);
                                 }
-                                yield return new WaitForSeconds(0.5f);
                             }
                             switch (status)
                             {
@@ -275,8 +297,101 @@ namespace HideoutAutomation.MonoBehaviours
                                     break;
                             }
                         }
+
+                        if (shouldScanHIPContributions)
+                        {
+                            this.hipContributionScanCompleted = true;
+                            if (Globals.Debug)
+                                LogHelper.LogInfo($"(HIP): scan complete. Candidates={this.pendingHIPContributionCandidates.Count}");
+                        }
+
+                        this.tryShowHIPContributionConfirmation();
                     }
                 }
+            }
+        }
+
+        private string buildHIPContributionDescription(IEnumerable<HIPContributionCandidate> candidates)
+        {
+            List<string> lines = [];
+            foreach (HIPContributionCandidate candidate in candidates)
+            {
+                lines.Add($"Area: {candidate.AreaType}");
+                foreach (string contributionMessage in candidate.ContributionMessages)
+                    lines.Add($"- {contributionMessage}");
+            }
+
+            if (lines.Count == 0)
+                return string.Empty;
+
+            return $"Contribute the following Hideout In Progress items?{Environment.NewLine}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+        }
+
+        private HIPContributionCandidate? createHIPContributionCandidate(HideoutClass hideout, AreaData data, EAreaType areaType, List<Requirement> requirements)
+        {
+            if (Globals.Debug)
+                LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
+
+            List<string> itemIds = [];
+            List<string> contributionMessages = [];
+            ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
+            foreach (ItemRequirement itemRequirement in itemRequirements)
+            {
+                var contributions = hideout.method_21([itemRequirement]);
+                if (contributions.Count > 0)
+                {
+                    if (Globals.Debug)
+                        LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
+                    foreach (var contribution in contributions)
+                    {
+                        string itemId = contribution.Item.Id;
+                        string contributionMessage = $"Contributed {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.";
+                        itemIds.Add(itemId);
+                        contributionMessages.Add(contributionMessage);
+                    }
+                }
+            }
+
+            if (itemIds.Count == 0 || this.CanFindAllItems(itemIds) == false)
+                return null;
+
+            return new HIPContributionCandidate(data, areaType, itemRequirements, itemIds, contributionMessages);
+        }
+
+        private bool executeHIPContributionCandidates(IEnumerable<HIPContributionCandidate> candidates)
+        {
+            bool contributed = false;
+            foreach (HIPContributionCandidate candidate in candidates)
+            {
+                if (this.CanFindAllItems(candidate.ItemIds) == false)
+                {
+                    if (Globals.Debug)
+                        LogHelper.LogInfo($"(HIP): stale candidate skipped for area {candidate.AreaType}.");
+                    continue;
+                }
+
+                this.hideoutInProgressContribute(candidate.AreaData, candidate.ItemRequirements);
+                contributed = true;
+                foreach (string contributionMessage in candidate.ContributionMessages)
+                    LogHelper.LogInfoWithNotification(contributionMessage);
+            }
+
+            return contributed;
+        }
+
+        private IEnumerator refreshSimpleStashPanels()
+        {
+            //HACK finally found a way to hard refresh the draw of SimpleStashPanel.
+            foreach (SimpleStashPanel simpleStashPanel in this.simpleStashPanels)
+            {
+                ScrollRect? scroll = getStashScroll(simpleStashPanel);
+                float originalPosition = scroll?.verticalNormalizedPosition ?? 1.0f;
+                yield return null; //EndOfFrame
+                forceScrollRefresh(scroll, Mathf.Clamp01(originalPosition - 0.1f));
+                yield return null; //EndOfFrame
+                forceScrollRefresh(scroll, Mathf.Clamp01(originalPosition + 0.2f));
+                yield return null; //EndOfFrame
+                forceScrollRefresh(scroll, originalPosition);
             }
         }
 
@@ -370,6 +485,47 @@ namespace HideoutAutomation.MonoBehaviours
                 || this.lastRemoveItemRequirements != Globals.RemoveItemRequirements
                 || this.lastRemoveSkillRequirements != Globals.RemoveSkillRequirements
                 || this.lastRemoveTraderRequirements != Globals.RemoveTraderRequirements;
+        }
+
+        private void resetHIPContributionConfirmationCycle()
+        {
+            this.hipContributionDeniedThisCycle = false;
+            this.hipContributionScanCompleted = false;
+            this.pendingHIPContributionCandidates.Clear();
+            if (Globals.Debug)
+                LogHelper.LogInfo("(HIP): confirmation cycle reset.");
+        }
+
+        private void tryShowHIPContributionConfirmation()
+        {
+            if (Globals.EnableHIPContributionConfirmation == false
+                || this.hipContributionDeniedThisCycle
+                || this.inDialog
+                || this.pendingHIPContributionCandidates.Count == 0)
+                return;
+
+            string description = this.buildHIPContributionDescription(this.pendingHIPContributionCandidates);
+            if (string.IsNullOrWhiteSpace(description))
+                return;
+
+            HIPContributionCandidate[] candidates = this.pendingHIPContributionCandidates.ToArray();
+            this.pendingHIPContributionCandidates.Clear();
+
+            this.showDialogWindow(description, () =>
+            {
+                if (RaidHelper.HasRaidLoaded())
+                    return;
+
+                if (Globals.Debug)
+                    LogHelper.LogInfo("(HIP): contribution prompt accepted.");
+                if (this.executeHIPContributionCandidates(candidates))
+                    this.StartCoroutine(this.refreshSimpleStashPanels());
+            }, () =>
+            {
+                this.hipContributionDeniedThisCycle = true;
+                if (Globals.Debug)
+                    LogHelper.LogInfo("(HIP): contribution prompt denied.");
+            });
         }
 
         /// <summary>

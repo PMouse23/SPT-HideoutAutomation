@@ -18,6 +18,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
         private ConfigEntry<bool> debug;
+        private ConfigEntry<bool> enableHIPContributionConfirmation;
         private ConfigEntry<bool> enableHideoutInProgressSupport;
         private ConfigEntry<bool> enableProductionStacking;
         private ConfigEntry<bool> onlyContributeWhenAreaRequirementsAreMet;
@@ -108,6 +109,9 @@ namespace HideoutAutomation
             this.enableHideoutInProgressSupport = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressSupport", true, "Experimental (HIP mod support). Disable when problems occur.");
             this.enableHideoutInProgressSupport.SettingChanged += this.global_SettingChanged;
 
+            this.enableHIPContributionConfirmation = this.Config.Bind("HideoutInProgress", "EnableHIPContributionConfirmation", true, "(HIP mod support) Ask confirmation before contributing items after raid.");
+            this.enableHIPContributionConfirmation.SettingChanged += this.global_SettingChanged;
+
             this.onlyContributeWhenAreaRequirementsAreMet = this.Config.Bind("HideoutInProgress", "OnlyContributeWhenAreaRequirementsAreMet", true, "(HIP mod support) Only contribute when area requirements are met.");
             this.onlyContributeWhenAreaRequirementsAreMet.SettingChanged += this.global_SettingChanged;
 
@@ -128,6 +132,7 @@ namespace HideoutAutomation
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
+            Globals.EnableHIPContributionConfirmation = this.enableHIPContributionConfirmation.Value;
             Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
             Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
             Globals.ProductionStacking = this.enableProductionStacking.Value;
