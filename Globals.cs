@@ -11,6 +11,7 @@ internal static class Globals
     public static bool AutoInstall = true;
     public static bool AutoUpgrade = true;
     public static bool Debug = false;
+    public static bool EnableHIPContributionConfirmation = true;
     public static KeyboardShortcut InvestigateKeys = new KeyboardShortcut(KeyCode.I, KeyCode.LeftControl);
     public static bool IsHideoutInProgressSupportEnabled = true;
     public static bool OnlyContributeWhenAreaRequirementsAreMet = true;
