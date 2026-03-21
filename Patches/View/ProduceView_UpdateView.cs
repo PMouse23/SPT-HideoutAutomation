@@ -4,6 +4,7 @@ using EFT.Hideout;
 using EFT.InventoryLogic;
 using EFT.UI;
 using HarmonyLib;
+using HideoutAutomation.Extensions;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
@@ -64,19 +65,13 @@ namespace HideoutAutomation.Patches.View
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
-                if (inProductionArea == 0)
-                {
-                    scheme.productionTime = Singleton<ProductionService>.Instance.CalculateProductionTime(schemeId, () =>
-                    {
-                        return (float)produceView.Producer.CalculateProductionTime(scheme);
-                    });
-                }
                 TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, async delegate
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
-                        produceView.Producer.StartProducing(scheme);
+                        Singleton<HideoutClass>.Instance.StartProducing(scheme);
+
                     await Task.Delay(500);
                     await Singleton<ProductionService>.Instance.GetState();
                 }));

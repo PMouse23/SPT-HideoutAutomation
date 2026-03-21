@@ -1,6 +1,7 @@
 ﻿using Comfort.Common;
 using EFT;
 using EFT.Hideout;
+using HideoutAutomation.Extensions;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production.Requests;
 using HideoutAutomation.Production.Responses;
@@ -53,22 +54,7 @@ namespace HideoutAutomation.Production
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
                         ProductionBuild next = await this.startFromStack(areaType);
                         if (next != null)
-                        {
-                            if (Globals.Debug)
-                                LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
-
-                            var producingItem = next.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
-                            if (producingItem != null && producingItem.SchemeId != null)
-                            {
-                                next.productionTime = this.CalculateProductionTime(producingItem.SchemeId, () =>
-                                {
-                                    return (float)producer.CalculateProductionTime(next);
-                                });
-                                if (Globals.Debug)
-                                    LogHelper.LogInfoWithNotification($"producingItem {next.Id} {next.productionTime}.");
-                                producer.StartProducing(next);
-                            }
-                        }
+                            Singleton<HideoutClass>.Instance.StartProducing(next);
                     }
 
                     await this.GetState();

@@ -254,7 +254,8 @@ namespace HideoutAutomation.Server
             MongoId? recipeId = this.ProduceNext(sessionId, pmcData, area);
             if (recipeId == null)
                 return default;
-            return this.GetHideoutProduction(recipeId.Value);
+            ValueTask<HideoutProduction?> result = this.GetHideoutProduction(recipeId.Value);
+            return result;
         }
 
         public ValueTask<bool> Unstack(MongoId sessionId, UnstackProductionRequestData requestData)

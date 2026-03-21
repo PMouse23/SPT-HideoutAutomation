@@ -111,6 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Construction\Requests\FindItemsRequest.cs" />
+    <Compile Include="Extensions\HideoutClassExtensions.cs" />
     <Compile Include="Helpers\LogHelper.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Helpers\ModChecker.cs" />
