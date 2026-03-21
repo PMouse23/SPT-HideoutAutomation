@@ -577,7 +577,7 @@ namespace HideoutAutomation.MonoBehaviours
             foreach (HIPContributionCandidate candidate in candidates)
             {
                 lines.Add(string.Empty);
-                lines.Add($"Area: {candidate.AreaType}");
+                lines.Add($"Area: {candidate.AreaData.Template.Name}");
                 foreach (string contributionMessage in candidate.ContributionMessages)
                     lines.Add($"- {contributionMessage}");
             }
