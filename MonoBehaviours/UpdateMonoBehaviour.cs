@@ -625,7 +625,7 @@ namespace HideoutAutomation.MonoBehaviours
                     foreach (var contribution in contributions)
                     {
                         string itemId = contribution.Item.Id;
-                        string contributionMessage = $"Contribute {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()} to {areaType}.";
+                        string contributionMessage = $"Contribute {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()}.";
                         itemIds.Add(itemId);
                         contributionMessages.Add(contributionMessage);
                     }
