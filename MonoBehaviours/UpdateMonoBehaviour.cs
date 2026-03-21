@@ -576,6 +576,7 @@ namespace HideoutAutomation.MonoBehaviours
             List<string> lines = [];
             foreach (HIPContributionCandidate candidate in candidates)
             {
+                lines.Add(string.Empty);
                 lines.Add($"Area: {candidate.AreaType}");
                 foreach (string contributionMessage in candidate.ContributionMessages)
                     lines.Add($"- {contributionMessage}");
@@ -584,7 +585,7 @@ namespace HideoutAutomation.MonoBehaviours
             if (lines.Count == 0)
                 return string.Empty;
 
-            return $"Contribute the following Hideout In Progress items?{Environment.NewLine}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+            return $"Contribute the following Hideout In Progress items?{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
         }
 
         /// <summary>
