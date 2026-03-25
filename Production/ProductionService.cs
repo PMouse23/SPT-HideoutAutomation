@@ -117,13 +117,13 @@ namespace HideoutAutomation.Production
             this.produceViews.Remove(produceView);
         }
 
-        public bool Unstack(string schemeId)
+        public async Task<bool> Unstack(string schemeId)
         {
             UnstackProductionRequest unstackProductionRequest = new UnstackProductionRequest()
             {
                 recipeId = schemeId
             };
-            string response = RequestHandler.PutJson("/hideoutautomation/Unstack", JsonConvert.SerializeObject(unstackProductionRequest));
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/Unstack", JsonConvert.SerializeObject(unstackProductionRequest));
             return JsonConvert.DeserializeObject<bool>(response);
         }
 

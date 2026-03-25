@@ -55,7 +55,7 @@ namespace HideoutAutomation.Patches.View
                 string schemeId = scheme._id;
                 if (Globals.SpecialShortcut.IsPressed())
                 {
-                    unstackProduction(produceView, schemeId);
+                    await unstackProduction(produceView, schemeId);
                     return;
                 }
                 if (Globals.Debug)
@@ -147,11 +147,11 @@ namespace HideoutAutomation.Patches.View
             startButton.gameObject.SetActive(true);
         }
 
-        private static void unstackProduction(ProduceView produceView, string schemeId)
+        private static async Task unstackProduction(ProduceView produceView, string schemeId)
         {
             if (Globals.Debug)
                 LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
-            if (Singleton<ProductionService>.Instance.Unstack(schemeId)
+            if (await Singleton<ProductionService>.Instance.Unstack(schemeId)
                 && Singleton<ProductionService>.Instance.State.stackCount.ContainsKey(schemeId))
             {
                 Singleton<ProductionService>.Instance.State.stackCount[schemeId]--;
