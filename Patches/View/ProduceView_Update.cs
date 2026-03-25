@@ -42,10 +42,10 @@ namespace HideoutAutomation.Patches.View
                     startButton.SetHeaderText($"Unstack ({stacked})");
                     startButton.Interactable = true;
                     startButton.gameObject.SetActive(true);
+                    return;
                 }
             }
-            else
-                startButton.SetHeaderText($"Stack ({stacked})");
+            startButton.SetHeaderText($"Stack ({stacked})");
         }
 
         private bool isTargetMethod(MethodInfo method)
