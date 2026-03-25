@@ -3,7 +3,9 @@ using HarmonyLib;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
+using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace HideoutAutomation.Patches.Hideout
 {
@@ -22,7 +24,19 @@ namespace HideoutAutomation.Patches.Hideout
             Singleton<ProductionService>.Create(new ProductionService());
             if (Globals.Debug)
                 LogHelper.LogInfo($"Created ProductionService");
-            await Singleton<ProductionService>.Instance.GetState();
+            await tryGetState();
+        }
+
+        private static async Task tryGetState()
+        {
+            try
+            {
+                await Singleton<ProductionService>.Instance.GetState();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.LogExceptionToConsole(ex);
+            }
         }
 
         private bool IsTargetMethod(MethodInfo method)
