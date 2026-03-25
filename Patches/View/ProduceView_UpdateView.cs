@@ -90,6 +90,9 @@ namespace HideoutAutomation.Patches.View
         {
             try
             {
+                if (Globals.ProductionStacking == false)
+                    return;
+
                 ProduceView produceView = __instance;
                 if (produceView == null)
                     return;

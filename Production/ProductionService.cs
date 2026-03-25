@@ -30,6 +30,9 @@ namespace HideoutAutomation.Production
                         Singleton<ProductionService>.Instance = null;
                         return;
                     }
+                    if (Globals.ProductionStacking == false)
+                        return;
+
                     var producer = obj;
                     EAreaType areaType = producer.AreaType;
                     string completedSchemeId = producer.CompleteItemsStorage.FindCompleteItems().Item1;
