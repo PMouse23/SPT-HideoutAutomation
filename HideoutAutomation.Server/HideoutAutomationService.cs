@@ -275,9 +275,12 @@ namespace HideoutAutomation.Server
             PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
             if (pmcData == null)
                 return ValueTask.FromResult(false);
+            if (pmcData.Id is not MongoId profileId)
+                return ValueTask.FromResult(false);
             List<Item> itemsToReturn = unstacked.PaymentItems;
             ragfairServerHelper.ReturnItems(sessionId, itemsToReturn);
             values.RemoveLast();
+            hideoutAutomationStore.Set(profileId);
             return ValueTask.FromResult(true);
         }
 
