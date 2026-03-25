@@ -21,7 +21,7 @@ namespace HideoutAutomation.Patches.View
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.FirstMethod(typeof(ProduceView), this.IsTargetMethod);
+            return AccessTools.FirstMethod(typeof(ProduceView), this.isTargetMethod);
         }
 
         private static bool checkRequirementsWithoutTools(Requirement[] requirements)
@@ -151,14 +151,15 @@ namespace HideoutAutomation.Patches.View
         {
             if (Globals.Debug)
                 LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
-            if (Singleton<ProductionService>.Instance.Unstack(schemeId))
+            if (Singleton<ProductionService>.Instance.Unstack(schemeId)
+                && Singleton<ProductionService>.Instance.State.stackCount.ContainsKey(schemeId))
             {
                 Singleton<ProductionService>.Instance.State.stackCount[schemeId]--;
                 produceView.UpdateView();
             }
         }
 
-        private bool IsTargetMethod(MethodInfo method)
+        private bool isTargetMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
             return method.Name == nameof(ProduceView.UpdateView)
