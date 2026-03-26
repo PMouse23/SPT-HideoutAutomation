@@ -3,7 +3,9 @@ using HarmonyLib;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production;
 using SPT.Reflection.Patching;
+using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace HideoutAutomation.Patches.Hideout
 {
@@ -15,13 +17,26 @@ namespace HideoutAutomation.Patches.Hideout
         }
 
         [PatchPostfix]
-        private static void PatchPostfix(HideoutClass __instance)
+        private static async void PatchPostfix(HideoutClass __instance)
         {
             if (Singleton<ProductionService>.Instance != null)
                 return;
             Singleton<ProductionService>.Create(new ProductionService());
             if (Globals.Debug)
                 LogHelper.LogInfo($"Created ProductionService");
+            await tryGetState();
+        }
+
+        private static async Task tryGetState()
+        {
+            try
+            {
+                await Singleton<ProductionService>.Instance.GetState();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.LogExceptionToConsole(ex);
+            }
         }
 
         private bool IsTargetMethod(MethodInfo method)

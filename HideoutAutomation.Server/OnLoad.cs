@@ -1,13 +1,12 @@
 ﻿using HideoutAutomation.Server.Patches;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Servers;
 using System.Threading.Tasks;
 
 namespace HideoutAutomation.Server
 {
     [Injectable(TypePriority = OnLoadOrder.PreSptModLoader)]
-    public class OnLoad(SaveServer saveServer, HideoutAutomationService hideoutAutomationService) : IOnLoad
+    public class OnLoad() : IOnLoad
     {
         Task IOnLoad.OnLoad()
         {

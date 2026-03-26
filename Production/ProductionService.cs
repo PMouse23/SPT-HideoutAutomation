@@ -1,8 +1,10 @@
 ﻿using Comfort.Common;
 using EFT;
 using EFT.Hideout;
+using HideoutAutomation.Extensions;
 using HideoutAutomation.Helpers;
 using HideoutAutomation.Production.Requests;
+using HideoutAutomation.Production.Responses;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using System;
@@ -14,6 +16,8 @@ namespace HideoutAutomation.Production
     internal class ProductionService
     {
         private readonly List<ProduceView> produceViews = [];
+        private readonly Dictionary<string, float> schemeProductonTimes = new Dictionary<string, float>();
+        private StateResponse state;
 
         public ProductionService()
         {
@@ -35,19 +39,17 @@ namespace HideoutAutomation.Production
 
                     if (isContinuousScheme(producer, completedSchemeId))
                     {
-                        this.updateProduceViews();
+                        this.UpdateProduceViews();
                         return;
                     }
 
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
-
                     if (this.CanFindProduction(completedSchemeId))
                         await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow);
                     producer.GetItems(completedSchemeId);
-
-                    int count = await this.GetAreaCount(areaType);
+                    int count = this.GetAreaCount(areaType);
                     if (count > 0)
                     {
                         await Task.Delay(500);
@@ -55,21 +57,11 @@ namespace HideoutAutomation.Production
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
                         ProductionBuild next = await this.startFromStack(areaType);
                         if (next != null)
-                        {
-                            if (Globals.Debug)
-                                LogHelper.LogInfoWithNotification($"StartProducing {next.Id}.");
-
-                            var producingItem = next.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
-                            if (producingItem != null && producingItem.SchemeId != null)
-                            {
-                                if (Globals.Debug)
-                                    LogHelper.LogInfoWithNotification($"producingItem {producingItem.SchemeId}.");
-                                producer.StartProducing(next);
-                            }
-                        }
+                            Singleton<HideoutClass>.Instance.StartProducing(next);
                     }
 
-                    this.updateProduceViews();
+                    await this.GetState();
+                    this.UpdateProduceViews();
                 }
                 catch (Exception ex)
                 {
@@ -83,37 +75,62 @@ namespace HideoutAutomation.Production
             this.produceViews.Add(produceView);
         }
 
-        public async Task<int> GetAreaCount(EAreaType areaType)
+        public float CalculateProductionTime(string schemeId, Func<float> calculateProductionTimeCallback)
         {
-            bool includeCurrentProduction = false;
-            return await this.GetAreaCount(areaType, includeCurrentProduction);
+            if (this.schemeProductonTimes.ContainsKey(schemeId))
+                return this.schemeProductonTimes[schemeId];
+            float producingTime = calculateProductionTimeCallback.Invoke();
+            this.schemeProductonTimes.Add(schemeId, producingTime);
+            return producingTime;
         }
 
-        public async Task<int> GetAreaCount(EAreaType areaType, bool includeCurrentProduction)
+        public int GetAreaCount(EAreaType areaType)
         {
-            AreaCountRequest productionCountRequest = new AreaCountRequest()
-            {
-                area = areaType,
-                includeCurrentProduction = includeCurrentProduction
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/AreaCount", JsonConvert.SerializeObject(productionCountRequest));
-            return JsonConvert.DeserializeObject<int>(response);
+            if (Globals.Debug && this.state.areaCount == null)
+                LogHelper.LogErrorWithNotification("this.state.areaCount is null.");
+            int count = 0;
+            this.state.areaCount?.TryGetValue(areaType, out count);
+            return count;
         }
 
-        public async Task<int> GetStackCount(string productionId, EAreaType areaType)
+        public int GetStackCount(string productionId)
         {
-            ProductionCountRequest productionCountRequest = new ProductionCountRequest()
-            {
-                area = areaType,
-                recipeId = productionId
-            };
-            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/StackCount", JsonConvert.SerializeObject(productionCountRequest));
-            return JsonConvert.DeserializeObject<int>(response);
+            if (Globals.Debug && this.state.stackCount == null)
+                LogHelper.LogErrorWithNotification("this.state.stackCount is null.");
+            int productionCount = 0;
+            this.state.stackCount?.TryGetValue(productionId, out productionCount);
+            return productionCount;
+        }
+
+        public async Task<StateResponse> GetState()
+        {
+            string response = await RequestHandler.GetJsonAsync("/hideoutautomation/State");
+            if (Globals.Debug)
+                LogHelper.LogInfo($"state: {response}");
+            StateResponse result = JsonConvert.DeserializeObject<StateResponse>(response);
+            this.state = result;
+            return result;
         }
 
         public void RemoveProduceView(ProduceView produceView)
         {
             this.produceViews.Remove(produceView);
+        }
+
+        public async Task<bool> Unstack(string schemeId)
+        {
+            UnstackProductionRequest unstackProductionRequest = new UnstackProductionRequest()
+            {
+                recipeId = schemeId
+            };
+            string response = await RequestHandler.PutJsonAsync("/hideoutautomation/Unstack", JsonConvert.SerializeObject(unstackProductionRequest));
+            return JsonConvert.DeserializeObject<bool>(response);
+        }
+
+        public void UpdateProduceViews()
+        {
+            foreach (ProduceView produceView in produceViews)
+                produceView.UpdateView();
         }
 
         private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
@@ -141,10 +158,12 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<ProductionBuild>(response);
         }
 
-        private void updateProduceViews()
+        public StateResponse State
         {
-            foreach (ProduceView produceView in produceViews)
-                produceView.UpdateView();
+            get
+            {
+                return this.state;
+            }
         }
     }
 }

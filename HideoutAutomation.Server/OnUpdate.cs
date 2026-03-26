@@ -17,7 +17,11 @@ namespace HideoutAutomation.Server
                 return false;
 
             foreach (var (sessionId, profile) in saveServer.GetProfiles())
+            {
+                //HACK first few versions for compatibility.
+                hideoutAutomationService.MoveOldtoNewQueue(sessionId, profile.CharacterData?.PmcData);
                 hideoutAutomationService.UpdateProductionQueue(sessionId, profile.CharacterData?.PmcData);
+            }
             return true;
         }
     }
