@@ -130,7 +130,6 @@
     <Compile Include="Patches\View\SimpleStashPanel_Show.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Production\ProductionBuild.cs" />
-    <Compile Include="Production\ProductionBuildStoreModel.cs" />
     <Compile Include="Production\ProductionService.cs" />
     <Compile Include="Production\Requests\FindProductionRequest.cs" />
     <Compile Include="Production\Requests\NextProductionRequest.cs" />
