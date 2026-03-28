@@ -117,6 +117,7 @@
     <Compile Include="Helpers\ModChecker.cs" />
     <Compile Include="Helpers\RaidHelper.cs" />
     <Compile Include="Helpers\ReflectionHelper.cs" />
+    <Compile Include="HIP\HIPContributionCandidate.cs" />
     <Compile Include="MonoBehaviours\UpdateMonoBehaviour.cs" />
     <Compile Include="Patches\Application\TarkovApplication_Init.cs" />
     <Compile Include="Patches\Hideout\HideoutClass_SetInventoryController.cs" />
