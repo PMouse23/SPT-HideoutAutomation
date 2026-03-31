@@ -312,6 +312,10 @@ namespace HideoutAutomation.Server
                 IEnumerable<ProductionStartRequestAndPaymentData> productionsSorted = areaProduction.Value
                                                                                                     .GroupBy(p => p.RequestData.RecipeId)
                                                                                                     .SelectMany(g => g.OrderBy(p => p.RequestData.Timestamp));
+                IEnumerable<Production?> productions = this.getAreaProductions(pmcData, area);
+                Production? currentProduction = productions.FirstOrDefault();
+                if (currentProduction != null && currentProduction.ProductionTime is double productionTime)
+                    startTimeStamp = currentProduction.StartTimestamp + (long)productionTime;
                 foreach (var production in productionsSorted)
                 {
                     var recipeId = production.RequestData.RecipeId;
