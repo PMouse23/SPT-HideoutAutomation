@@ -75,6 +75,13 @@ namespace HideoutAutomation.Production
             this.produceViews.Add(produceView);
         }
 
+        public void AddUpAreaCount(EAreaType areaType)
+        {
+            int areaCount = this.GetAreaCount(areaType);
+            if (this.state.areaCount?.ContainsKey(areaType) == true)
+                this.state.areaCount[areaType] = areaCount + 1;
+        }
+
         public float CalculateProductionTime(string schemeId, Func<float> calculateProductionTimeCallback)
         {
             if (this.schemeProductonTimes.ContainsKey(schemeId))
