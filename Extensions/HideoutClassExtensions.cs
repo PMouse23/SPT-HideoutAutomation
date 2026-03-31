@@ -1,8 +1,6 @@
 ﻿#nullable enable
 
-using Comfort.Common;
 using HideoutAutomation.Helpers;
-using HideoutAutomation.Production;
 
 namespace HideoutAutomation.Extensions
 {
@@ -22,10 +20,6 @@ namespace HideoutAutomation.Extensions
                         var producingItem = scheme.GetProducingItem(producer.ProductionSpeedCoefficient, producer.ReductionCoefficient);
                         if (producingItem != null && producingItem.SchemeId != null)
                         {
-                            scheme.productionTime = Singleton<ProductionService>.Instance.CalculateProductionTime(producingItem.SchemeId, () =>
-                            {
-                                return (float)producer.CalculateProductionTime(scheme);
-                            });
                             producer.StartProducing(scheme);
                             if (Globals.Debug)
                                 LogHelper.LogInfoWithNotification($"StartProducing {schemeId} {scheme.productionTime}.");
