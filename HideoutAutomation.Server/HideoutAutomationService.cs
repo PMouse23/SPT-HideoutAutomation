@@ -260,6 +260,7 @@ namespace HideoutAutomation.Server
             HideoutProduction? hideoutProduction = this.GetHideoutProduction(recipeId);
             if (hideoutProduction == null)
                 return default;
+            hideoutProduction = cloner.Clone(hideoutProduction);
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             double productionTime = (double)(currentTimeStamp - started.Timestamp ?? currentTimeStamp);
             hideoutProduction.ProductionTime = productionTime > 10 ? productionTime : 10;
