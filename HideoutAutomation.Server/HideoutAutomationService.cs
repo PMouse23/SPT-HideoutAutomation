@@ -34,6 +34,8 @@ namespace HideoutAutomation.Server
     {
         private const string purifiedWaterRecipeId = "5d5589c1f934db045e6c5492";
 
+        private const int TIMESTAMPMARGIN = 10;
+
         public ValueTask<bool> CanFindAllItems(MongoId sessionId, FindItemsRequestData requestData)
         {
             if (requestData.ItemIds == null)
@@ -149,7 +151,7 @@ namespace HideoutAutomation.Server
             if (startRequestData.Items != null)
                 startRequestData.Items.Clear();
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if (startRequestData.Timestamp > currentTimeStamp)
+            if (startRequestData.Timestamp > currentTimeStamp + TIMESTAMPMARGIN)
                 startRequestData.Timestamp = currentTimeStamp;
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
@@ -258,12 +260,16 @@ namespace HideoutAutomation.Server
                 return default;
             MongoId recipeId = started.RecipeId;
             HideoutProduction? hideoutProduction = this.GetHideoutProduction(recipeId);
+            hideoutProduction = cloner.Clone(hideoutProduction);
             if (hideoutProduction == null)
                 return default;
-            hideoutProduction = cloner.Clone(hideoutProduction);
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            double productionTime = (double)(currentTimeStamp - started.Timestamp ?? currentTimeStamp);
-            hideoutProduction.ProductionTime = productionTime > 10 ? productionTime : 10;
+            long productionTimeAsLong = 0L;
+            if (hideoutProduction.ProductionTime != null)
+                productionTimeAsLong = (long)hideoutProduction.ProductionTime;
+            long completiontime = (started.Timestamp ?? currentTimeStamp) + productionTimeAsLong;
+            double productionTime = (double)(completiontime - (started.Timestamp ?? currentTimeStamp));
+            hideoutProduction.ProductionTime = productionTime > TIMESTAMPMARGIN ? productionTime : TIMESTAMPMARGIN;
             return ValueTask.FromResult(hideoutProduction);
         }
 
