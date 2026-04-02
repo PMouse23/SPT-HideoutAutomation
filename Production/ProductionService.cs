@@ -16,7 +16,6 @@ namespace HideoutAutomation.Production
     internal class ProductionService
     {
         private readonly List<ProduceView> produceViews = [];
-        private readonly Dictionary<string, float> schemeProductonTimes = new Dictionary<string, float>();
         private StateResponse state;
 
         public ProductionService()
@@ -80,15 +79,6 @@ namespace HideoutAutomation.Production
             int areaCount = this.GetAreaCount(areaType);
             if (this.state.areaCount?.ContainsKey(areaType) == true)
                 this.state.areaCount[areaType] = areaCount + 1;
-        }
-
-        public float CalculateProductionTime(string schemeId, Func<float> calculateProductionTimeCallback)
-        {
-            if (this.schemeProductonTimes.ContainsKey(schemeId))
-                return this.schemeProductonTimes[schemeId];
-            float producingTime = calculateProductionTimeCallback.Invoke();
-            this.schemeProductonTimes.Add(schemeId, producingTime);
-            return producingTime;
         }
 
         public int GetAreaCount(EAreaType areaType)
