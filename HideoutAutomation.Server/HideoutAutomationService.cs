@@ -34,6 +34,8 @@ namespace HideoutAutomation.Server
     {
         private const string purifiedWaterRecipeId = "5d5589c1f934db045e6c5492";
 
+        private const int TIMESTAMPMARGIN = 10;
+
         public ValueTask<bool> CanFindAllItems(MongoId sessionId, FindItemsRequestData requestData)
         {
             if (requestData.ItemIds == null)
@@ -71,9 +73,9 @@ namespace HideoutAutomation.Server
             return hideoutAutomationData.CompletedProductions.ToArray().Select(production => production.RecipeId);
         }
 
-        public ValueTask<HideoutProduction?> GetHideoutProduction(MongoId recipeId)
+        public HideoutProduction? GetHideoutProduction(MongoId recipeId)
         {
-            return ValueTask.FromResult(this.getHideoutProduction(recipeId));
+            return this.getHideoutProduction(recipeId);
         }
 
         public ValueTask<StateResponse> GetState(MongoId sessionId)
@@ -125,7 +127,7 @@ namespace HideoutAutomation.Server
                 hideoutAutomationStore.Set(profileId);
         }
 
-        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, HideoutAreas area)
+        public HideoutSingleProductionStartRequestData? ProduceNext(MongoId sessionId, PmcData pmcData, HideoutAreas area)
         {
             if (pmcData.Id is not MongoId profileId)
                 return null;
@@ -136,11 +138,11 @@ namespace HideoutAutomation.Server
                 return null;
             if (values.Count == 0)
                 return null;
-            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, profileId, values, data);
-            return recipeId;
+            HideoutSingleProductionStartRequestData? started = this.ProduceNext(sessionId, pmcData, profileId, values, data);
+            return started;
         }
 
-        public MongoId? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, LinkedList<ProductionStartRequestAndPaymentData> values, HideoutAutomationData data)
+        public HideoutSingleProductionStartRequestData? ProduceNext(MongoId sessionId, PmcData pmcData, MongoId profileId, LinkedList<ProductionStartRequestAndPaymentData> values, HideoutAutomationData data)
         {
             HideoutSingleProductionStartRequestData? startRequestData = values.FirstOrDefault()?.RequestData;
             if (startRequestData == null)
@@ -148,7 +150,9 @@ namespace HideoutAutomation.Server
             values.RemoveFirst();
             if (startRequestData.Items != null)
                 startRequestData.Items.Clear();
-            startRequestData.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (startRequestData.Timestamp > currentTimeStamp + TIMESTAMPMARGIN)
+                startRequestData.Timestamp = currentTimeStamp;
             if (startRequestData.Tools == null || startRequestData.Items == null)
                 return null;
             HideoutProduction? hideoutProduction = this.getHideoutProduction(startRequestData.RecipeId);
@@ -156,7 +160,7 @@ namespace HideoutAutomation.Server
                 return null;
             hideoutController.SingleProductionStart(pmcData, startRequestData, sessionId);
             hideoutAutomationStore.Set(profileId);
-            return startRequestData.RecipeId;
+            return startRequestData;
         }
 
         public void RemoveCompletedProductions(PmcData pmcData)
@@ -243,7 +247,7 @@ namespace HideoutAutomation.Server
             }
         }
 
-        public ValueTask<HideoutProduction?> StartFromStack(MongoId sessionId, NextProductionRequestData requestData)
+        public ValueTask<HideoutProduction> StartFromStack(MongoId sessionId, NextProductionRequestData requestData)
         {
             PmcData? pmcData = profileHelper.GetPmcProfile(sessionId);
             if (pmcData == null)
@@ -251,11 +255,22 @@ namespace HideoutAutomation.Server
             HideoutAreas area = requestData.Area;
             if (this.areaIsProducing(pmcData, area))
                 return default;
-            MongoId? recipeId = this.ProduceNext(sessionId, pmcData, area);
-            if (recipeId == null)
+            HideoutSingleProductionStartRequestData? started = this.ProduceNext(sessionId, pmcData, area);
+            if (started == null)
                 return default;
-            ValueTask<HideoutProduction?> result = this.GetHideoutProduction(recipeId.Value);
-            return result;
+            MongoId recipeId = started.RecipeId;
+            HideoutProduction? hideoutProduction = this.GetHideoutProduction(recipeId);
+            hideoutProduction = cloner.Clone(hideoutProduction);
+            if (hideoutProduction == null)
+                return default;
+            long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long productionTimeAsLong = 0L;
+            if (hideoutProduction.ProductionTime != null)
+                productionTimeAsLong = (long)hideoutProduction.ProductionTime;
+            long completiontime = (started.Timestamp ?? currentTimeStamp) + productionTimeAsLong;
+            double productionTime = (double)(completiontime - (started.Timestamp ?? currentTimeStamp));
+            hideoutProduction.ProductionTime = productionTime > TIMESTAMPMARGIN ? productionTime : TIMESTAMPMARGIN;
+            return ValueTask.FromResult(hideoutProduction);
         }
 
         public ValueTask<bool> Unstack(MongoId sessionId, UnstackProductionRequestData requestData)
@@ -304,6 +319,10 @@ namespace HideoutAutomation.Server
                 IEnumerable<ProductionStartRequestAndPaymentData> productionsSorted = areaProduction.Value
                                                                                                     .GroupBy(p => p.RequestData.RecipeId)
                                                                                                     .SelectMany(g => g.OrderBy(p => p.RequestData.Timestamp));
+                IEnumerable<Production?> productions = this.getAreaProductions(pmcData, area);
+                Production? currentProduction = productions.FirstOrDefault();
+                if (currentProduction != null && currentProduction.ProductionTime is double productionTime)
+                    startTimeStamp = currentProduction.StartTimestamp + (long)productionTime;
                 foreach (var production in productionsSorted)
                 {
                     var recipeId = production.RequestData.RecipeId;

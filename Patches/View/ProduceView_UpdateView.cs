@@ -71,7 +71,7 @@ namespace HideoutAutomation.Patches.View
                         LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
                         Singleton<HideoutClass>.Instance.StartProducing(scheme);
-
+                    Singleton<ProductionService>.Instance.AddUpAreaCount(areaType);
                     await Task.Delay(500);
                     await Singleton<ProductionService>.Instance.GetState();
                 }));
