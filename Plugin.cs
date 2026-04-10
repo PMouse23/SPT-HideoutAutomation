@@ -28,6 +28,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> removeSkillRequirements;
         private ConfigEntry<bool> removeTraderRequirements;
         private ConfigEntry<KeyboardShortcut> resetDeclinedAreaUpdates;
+        private ConfigEntry<KeyboardShortcut> specialShortcut;
         private ConfigEntry<double> thresholdCurrencyHandover;
         private ConfigEntry<bool> useDialogWindow;
 
@@ -55,7 +56,9 @@ namespace HideoutAutomation
             new HideoutProductionRequirementView_Show().Enable();
             new ProduceView_Close().Enable();
             new ProduceView_Show().Enable();
+            new ProduceView_Update().Enable();
             new ProduceView_UpdateView().Enable();
+            new ProductionPanel_Show().Enable();
             new SimpleStashPanel_Close().Enable();
             new SimpleStashPanel_Show().Enable();
         }
@@ -79,7 +82,7 @@ namespace HideoutAutomation
             this.autoUpgrade = this.Config.Bind("Automation", "AutoUpgrade", true, "Auto update areas when they're available.");
             this.autoUpgrade.SettingChanged += this.global_SettingChanged;
 
-            this.resetDeclinedAreaUpdates = this.Config.Bind("Upgrading", "RestartUpgradingAreas", new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl), "Keys to press to reset the (in memory) declined area upgrades and restarts the couritine. So the DialogWindow will pop up again for these areas.");
+            this.resetDeclinedAreaUpdates = this.Config.Bind("Upgrading", "RestartUpgradingAreas", new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl), "Key(s) to press to reset the (in memory) declined area upgrades and restarts the couritine. So the DialogWindow will pop up again for these areas.");
             this.resetDeclinedAreaUpdates.SettingChanged += this.global_SettingChanged;
 
             this.thresholdCurrencyHandover = this.Config.Bind("Upgrading", "ThresholdCurrencyHandover", 1.5, "Threshold for the number of times you want to have the currency amount before spending it.");
@@ -106,6 +109,9 @@ namespace HideoutAutomation
             this.enableProductionStacking = this.Config.Bind("ProductionStacking", "EnableProductionStacking", true, "(experimental) enable production stacking.");
             this.enableProductionStacking.SettingChanged += this.global_SettingChanged;
 
+            this.specialShortcut = this.Config.Bind("ProductionStacking", "SpecialShortcut", new KeyboardShortcut(KeyCode.LeftControl), "Key(s) to press to do some special operations like unstacking.");
+            this.specialShortcut.SettingChanged += this.global_SettingChanged;
+
             this.enableHideoutInProgressSupport = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressSupport", true, "HIP mod support.");
             this.enableHideoutInProgressSupport.SettingChanged += this.global_SettingChanged;
 
@@ -124,18 +130,20 @@ namespace HideoutAutomation
             Globals.AutoConstruct = this.autoConstruct.Value;
             Globals.AutoInstall = this.autoInstall.Value;
             Globals.AutoUpgrade = this.autoUpgrade.Value;
+
+            Globals.EnableHideoutInProgressConfirmation = this.enableHideoutInProgressConfirmation.Value;
+            Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
+            Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
+            Globals.ProductionStacking = this.enableProductionStacking.Value;
             Globals.RemoveAreaRequirements = this.removeAreaRequirements.Value;
             Globals.RemoveCurrencyRequirements = this.removeCurrencyRequirements.Value;
             Globals.RemoveItemRequirements = this.removeItemRequirements.Value;
             Globals.RemoveSkillRequirements = this.removeSkillRequirements.Value;
             Globals.RemoveTraderRequirements = this.removeTraderRequirements.Value;
             Globals.ResetDeclinedAreaUpdates = this.resetDeclinedAreaUpdates.Value;
+            Globals.SpecialShortcut = this.specialShortcut.Value;
             Globals.ThresholdCurrencyHandover = this.thresholdCurrencyHandover.Value;
             Globals.UseDialogWindow = this.useDialogWindow.Value;
-            Globals.EnableHideoutInProgressConfirmation = this.enableHideoutInProgressConfirmation.Value;
-            Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
-            Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
-            Globals.ProductionStacking = this.enableProductionStacking.Value;
         }
     }
 }
