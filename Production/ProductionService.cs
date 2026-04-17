@@ -11,12 +11,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace HideoutAutomation.Production
 {
     internal class ProductionService
     {
         private readonly List<ProduceView> produceViews = [];
-        private StateResponse state;
+        private StateResponse state = new StateResponse() { areaCount = [], productions = [], stackCount = [] };
 
         public ProductionService()
         {
@@ -54,7 +56,7 @@ namespace HideoutAutomation.Production
                         await Task.Delay(500);
                         if (Globals.Debug)
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
-                        ProductionBuild next = await this.startFromStack(areaType);
+                        ProductionBuild? next = await this.startFromStack(areaType);
                         if (next != null)
                             Singleton<HideoutClass>.Instance.StartProducing(next);
                     }
@@ -145,7 +147,7 @@ namespace HideoutAutomation.Production
             return JsonConvert.DeserializeObject<bool>(response);
         }
 
-        private async Task<ProductionBuild> startFromStack(EAreaType areaType)
+        private async Task<ProductionBuild?> startFromStack(EAreaType areaType)
         {
             NextProductionRequest nextProductionRequest = new NextProductionRequest()
             {

@@ -15,6 +15,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
 
+#nullable enable
+
 namespace HideoutAutomation.Patches.View
 {
     internal class ProduceView_UpdateView : ModulePatch

@@ -1,6 +1,8 @@
 ﻿using EFT;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace HideoutAutomation.Production.Responses
 {
     internal struct StateResponse
