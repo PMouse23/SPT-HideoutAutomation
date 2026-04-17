@@ -67,7 +67,7 @@ namespace HideoutAutomation.Server.Patches
             presetAndModsClone?.RemapRootItemId();
 
             // Store preset items in array
-            return [presetAndModsClone];
+            return presetAndModsClone != null ? [presetAndModsClone] : [];
         }
 
         protected static void UnstackRewardIntoValidSize2(HideoutProduction recipe, List<List<Item>> itemAndChildrenToSendToPlayer, bool rewardIsPreset)
