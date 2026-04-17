@@ -22,6 +22,7 @@ internal static class Globals
     public static bool RemoveSkillRequirements = false;
     public static bool RemoveTraderRequirements = false;
     public static KeyboardShortcut ResetDeclinedAreaUpdates = new KeyboardShortcut(KeyCode.H, KeyCode.LeftControl);
+    public static KeyboardShortcut SpecialShortcut = new KeyboardShortcut(KeyCode.LeftControl);
     public static double ThresholdCurrencyHandover = 1.5;
     public static bool UseDialogWindow = true;
     #region HideoutInProgress

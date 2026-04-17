@@ -12,7 +12,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
+
+#nullable enable
 
 namespace HideoutAutomation.Patches.View
 {
@@ -20,7 +23,7 @@ namespace HideoutAutomation.Patches.View
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.FirstMethod(typeof(ProduceView), this.IsTargetMethod);
+            return AccessTools.FirstMethod(typeof(ProduceView), this.isTargetMethod);
         }
 
         private static bool checkRequirementsWithoutTools(Requirement[] requirements)
@@ -52,24 +55,27 @@ namespace HideoutAutomation.Patches.View
             {
                 var scheme = produceView.Scheme;
                 string schemeId = scheme._id;
-                scheme.productionTime = (float)produceView.Producer.CalculateProductionTime(scheme);
+                if (Globals.SpecialShortcut.IsPressed())
+                {
+                    await unstackProduction(produceView, schemeId);
+                    return;
+                }
                 if (Globals.Debug)
                     LogHelper.LogInfoWithNotification($"productionTime: {scheme.productionTime}");
                 EAreaType areaType = (EAreaType)scheme.areaType;
-                bool includeCurrentProduction = true;
-                int inProductionArea = await Singleton<ProductionService>.Instance.GetAreaCount(areaType, includeCurrentProduction);
-                int inStackRecipe = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+                int inProductionArea = Singleton<ProductionService>.Instance.GetAreaCount(areaType);
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
                 if (isProducingThisScheme)
                     scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
-                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, delegate
+                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, async delegate
                 {
                     if (Globals.Debug)
-                        LogHelper.LogInfoWithNotification($"inProductionArea: {inProductionArea}, inStackRecipe: {inStackRecipe}");
+                        LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
                     if (inProductionArea == 0)
-                        produceView.OnStartProducing?.Invoke(schemeId);
-                    if (inProductionArea > 0)
-                        produceView.UpdateStackButton(inStackRecipe + 1);
+                        Singleton<HideoutClass>.Instance.StartProducing(scheme);
+                    Singleton<ProductionService>.Instance.AddUpAreaCount(areaType);
+                    await Task.Delay(500);
+                    await Singleton<ProductionService>.Instance.GetState();
                 }));
             }
             catch (Exception ex)
@@ -79,7 +85,7 @@ namespace HideoutAutomation.Patches.View
         }
 
         [PatchPostfix]
-        private static async void PatchPostfix(ProduceView __instance,
+        private static void PatchPostfix(ProduceView __instance,
             DefaultUIButton ____startButton,
             HideoutItemViewFactory ____resultItemIconViewFactory,
             CanvasGroup ____viewCanvas)
@@ -100,7 +106,6 @@ namespace HideoutAutomation.Patches.View
                     return;
 
                 string schemeId = scheme._id;
-                EAreaType areaType = (EAreaType)scheme.areaType;
 
                 bool canStart = produceView.Boolean_0
                     && (produceView.Producer.CanStart
@@ -110,13 +115,13 @@ namespace HideoutAutomation.Patches.View
                 if (canStart == false && isProducingThisScheme)
                     canStart = checkRequirementsWithoutTools(scheme.requirements);
 
-                int stacked = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
+                int stacked = Singleton<ProductionService>.Instance.GetStackCount(schemeId);
                 DefaultUIButton startButton = ____startButton;
                 if (startButton != null)
                     patchStartButton(produceView, canStart, stacked, startButton);
                 HideoutItemViewFactory resultItemIconViewFactory = ____resultItemIconViewFactory;
                 if (resultItemIconViewFactory != null)
-                    await patchResultItemIconViewFactory(scheme, schemeId, areaType, resultItemIconViewFactory);
+                    patchResultItemIconViewFactory(scheme, schemeId, stacked + 1, resultItemIconViewFactory);
                 CanvasGroup viewCanvas = ____viewCanvas;
                 if (viewCanvas != null)
                 {
@@ -130,23 +135,33 @@ namespace HideoutAutomation.Patches.View
             }
         }
 
-        private static async System.Threading.Tasks.Task patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, EAreaType areaType, HideoutItemViewFactory resultItemIconViewFactory)
+        private static void patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, int inProduction, HideoutItemViewFactory resultItemIconViewFactory)
         {
-            int inProduction = await Singleton<ProductionService>.Instance.GetStackCount(schemeId, areaType);
             if (inProduction > 0)
                 resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());
         }
 
         private static void patchStartButton(ProduceView produceView, bool canStart, int stacked, DefaultUIButton startButton)
         {
-            startButton.SetHeaderText($"Stack ({stacked})");
             startButton.OnClick.RemoveAllListeners();
             startButton.OnClick.AddListener(() => { OnClick(produceView); });
             startButton.Interactable = canStart;
             startButton.gameObject.SetActive(true);
         }
 
-        private bool IsTargetMethod(MethodInfo method)
+        private static async Task unstackProduction(ProduceView produceView, string schemeId)
+        {
+            if (Globals.Debug)
+                LogHelper.LogInfoWithNotification($"unstack: {schemeId}");
+            if (await Singleton<ProductionService>.Instance.Unstack(schemeId)
+                && Singleton<ProductionService>.Instance.State.stackCount.ContainsKey(schemeId))
+            {
+                Singleton<ProductionService>.Instance.State.stackCount[schemeId]--;
+                produceView.UpdateView();
+            }
+        }
+
+        private bool isTargetMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
             return method.Name == nameof(ProduceView.UpdateView)
