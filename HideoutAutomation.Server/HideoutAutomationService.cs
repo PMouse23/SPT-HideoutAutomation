@@ -294,7 +294,7 @@ namespace HideoutAutomation.Server
                 return ValueTask.FromResult(false);
             List<Item> itemsToReturn = unstacked.PaymentItems;
             ragfairServerHelper.ReturnItems(sessionId, itemsToReturn);
-            values.RemoveLast();
+            values.Remove(unstacked);
             hideoutAutomationStore.Set(profileId);
             return ValueTask.FromResult(true);
         }
