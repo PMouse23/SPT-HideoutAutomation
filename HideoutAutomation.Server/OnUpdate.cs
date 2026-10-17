@@ -7,22 +7,24 @@ using System.Threading.Tasks;
 namespace HideoutAutomation.Server
 {
     [Injectable(TypePriority = OnLoadOrder.SaveCallbacks)]
-    public class OnUpdate(ConfigServer configServer, SaveServer saveServer, HideoutAutomationService hideoutAutomationService) : IOnUpdate
+    public class OnUpdate(HideoutConfig hideoutConfig, SaveServer saveServer, HideoutAutomationService hideoutAutomationService) : IOnUpdate
     {
-        protected readonly HideoutConfig HideoutConfig = configServer.GetConfig<HideoutConfig>();
+        protected readonly HideoutConfig HideoutConfig = hideoutConfig;
 
-        async Task<bool> IOnUpdate.OnUpdate(long secondsSinceLastRun)
+        Task<bool> IOnUpdate.OnUpdateAsync(long secondsSinceLastRun, CancellationToken cancellationToken)
         {
             if (secondsSinceLastRun < HideoutConfig.RunIntervalSeconds)
-                return false;
+                return Task.FromResult(false);
 
             foreach (var (sessionId, profile) in saveServer.GetProfiles())
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!hideoutAutomationService.IsQueueEnabled(sessionId)) continue;
                 //HACK first few versions for compatibility.
                 hideoutAutomationService.MoveOldtoNewQueue(sessionId, profile.CharacterData?.PmcData);
                 hideoutAutomationService.UpdateProductionQueue(sessionId, profile.CharacterData?.PmcData);
             }
-            return true;
+            return Task.FromResult(true);
         }
     }
 }

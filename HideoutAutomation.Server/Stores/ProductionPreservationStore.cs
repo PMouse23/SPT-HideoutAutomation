@@ -12,6 +12,7 @@ namespace HideoutAutomation.Server.Stores
 
         private readonly ConcurrentDictionary<MongoId, HideoutAutomationData> hideoutAutomationData = [];
 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.Synchronized)]
         public HideoutAutomationData Get(MongoId profileId)
         {
             if (hideoutAutomationData.TryGetValue(profileId, out HideoutAutomationData? data))
@@ -20,10 +21,13 @@ namespace HideoutAutomation.Server.Stores
             data = jsonStore.Load(profileId, filename);
             if (data == null)
                 data = new HideoutAutomationData();
+            if (data.CompletedProductions == null || data.AreaProductions == null || data.AreaProductionsAndPayment == null)
+                throw new System.IO.InvalidDataException("Invalid saved HideoutAutomation queue. Restore its backup before continuing.");
             hideoutAutomationData[profileId] = data;
             return data;
         }
 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.Synchronized)]
         public void Set(MongoId profileId)
         {
             if (hideoutAutomationData.TryGetValue(profileId, out HideoutAutomationData? data))

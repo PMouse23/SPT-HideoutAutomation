@@ -13,6 +13,7 @@ namespace HideoutAutomation.Patches.View
         [PatchPostfix]
         public static void PatchPostfix(ProduceView __instance, DefaultUIButton ____startButton)
         {
+            if (!Globals.ProductionStacking || Singleton<ProductionService>.Instance == null) return;
             ProduceView produceView = __instance;
             if (produceView == null)
                 return;

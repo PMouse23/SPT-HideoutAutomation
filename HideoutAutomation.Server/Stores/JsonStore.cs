@@ -24,7 +24,22 @@ namespace HideoutAutomation.Server.Stores
             if (json == null)
                 return;
             string fullPath = Path.Combine(profileDataFilepathPrefix, profileId, fileName);
-            fileUtil.WriteFile(fullPath, json);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            string temporaryPath = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                    stream.Write(bytes);
+                    stream.Flush(true);
+                }
+                File.Move(temporaryPath, fullPath, true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            }
         }
     }
 }

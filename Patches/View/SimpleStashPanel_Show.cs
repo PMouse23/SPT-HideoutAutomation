@@ -14,8 +14,6 @@ namespace HideoutAutomation.Patches.View
         [PatchPostfix]
         public static void PatchPostfix(SimpleStashPanel __instance)
         {
-            if (Globals.ProductionStacking == false)
-                return;
             try
             {
                 SimpleStashPanel simpleStashPanel = __instance;

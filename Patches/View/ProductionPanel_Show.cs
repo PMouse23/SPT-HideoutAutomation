@@ -16,7 +16,8 @@ namespace HideoutAutomation.Patches.View
         {
             try
             {
-                await Singleton<ProductionService>.Instance.GetState();
+                if (Globals.ProductionStacking && Singleton<ProductionService>.Instance != null)
+                    await Singleton<ProductionService>.Instance.GetState();
             }
             catch (Exception ex)
             {

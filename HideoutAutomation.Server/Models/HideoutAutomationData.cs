@@ -9,13 +9,13 @@ namespace HideoutAutomation.Server.Models
     public record HideoutAutomationData
     {
         [JsonPropertyName("completedProductions")]
-        public List<HideoutSingleProductionStartRequestData> CompletedProductions { get; } = [];
+        public List<HideoutSingleProductionStartRequestData> CompletedProductions { get; set; } = [];
 
-        [Obsolete("old storage of HideoutSingleProductionStartRequestData")]
+        // Legacy queue data is retained for migration.
         [JsonPropertyName("areaProductions")]
-        public Dictionary<HideoutAreas, LinkedList<HideoutSingleProductionStartRequestData>> AreaProductions { get; } = [];
+        public Dictionary<HideoutAreas, LinkedList<HideoutSingleProductionStartRequestData>> AreaProductions { get; set; } = [];
 
         [JsonPropertyName("areaProductionsAndPayment")]
-        public Dictionary<HideoutAreas, LinkedList<ProductionStartRequestAndPaymentData>> AreaProductionsAndPayment { get; } = [];
+        public Dictionary<HideoutAreas, LinkedList<ProductionStartRequestAndPaymentData>> AreaProductionsAndPayment { get; set; } = [];
     }
 }

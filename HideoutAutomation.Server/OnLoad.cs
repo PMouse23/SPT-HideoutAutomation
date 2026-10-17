@@ -1,23 +1,21 @@
-﻿using HideoutAutomation.Server.Patches;
+﻿using SPTarkov.Common.Models.Logging;
 using SPTarkov.DI.Annotations;
+using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.DI;
-using System.Threading.Tasks;
 
-namespace HideoutAutomation.Server
+namespace HideoutAutomation.Server;
+
+[Injectable(TypePriority = OnLoadOrder.Preload + 1)]
+public class OnLoad(IEnumerable<IRuntimePatch> patches, ISptLogger<OnLoad> logger) : IOnLoad
 {
-    [Injectable(TypePriority = OnLoadOrder.PreSptModLoader)]
-    public class OnLoad() : IOnLoad
+    public Task OnLoadAsync(CancellationToken cancellationToken)
     {
-        Task IOnLoad.OnLoad()
+        foreach (var patch in patches)
         {
-            new GameStart().Enable();
-            new HandleRecipe().Enable();
-            new MoveItem().Enable();
-            new SingleProductionStart().Enable();
-            new UnstackRewardIntoValidSize().Enable();
-            new UpgradeComplete().Enable();
-
-            return Task.CompletedTask;
+            cancellationToken.ThrowIfCancellationRequested();
+            patch.Enable();
         }
+        logger.Info("HideoutAutomation 1.3.2: construction/HIP enabled; production queue requires client opt-in.");
+        return Task.CompletedTask;
     }
 }

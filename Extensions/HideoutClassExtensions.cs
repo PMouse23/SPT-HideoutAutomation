@@ -1,4 +1,5 @@
-﻿#nullable enable
+﻿using EFT.Hideout;
+#nullable enable
 
 using HideoutAutomation.Helpers;
 
@@ -6,14 +7,14 @@ namespace HideoutAutomation.Extensions
 {
     internal static class HideoutClassExtensions
     {
-        public static bool StartProducing(this HideoutClass hideoutClass, ProductionBuildAbstractClass scheme)
+        public static bool StartProducing(this HideoutRepresentation hideoutClass, BaseHideoutScheme scheme)
         {
             string schemeId = scheme._id;
             if (schemeId == null)
                 return false;
             if (Globals.Debug)
                 LogHelper.LogInfoWithNotification($"TryStartProducing {schemeId}.");
-            foreach (var kvp in hideoutClass.ProductionController.Dictionary_0)
+            foreach (var kvp in hideoutClass.ProductionController._areaProducers)
                 foreach (var producer in kvp.Value)
                     if (producer.Schemes.ContainsKey(schemeId))
                     {

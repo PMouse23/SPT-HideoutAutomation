@@ -1,30 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>1.3.0</Version>
-    <SPTPath>D:\Offline</SPTPath>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <Version>1.3.2</Version>
+    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>HideoutAutomation.Server</AssemblyName>
     <OutputType>Library</OutputType>
-    <SPTModType>Server</SPTModType>
-    <LangVersion>latest</LangVersion>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <Configurations>Debug;Release</Configurations>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <DebugType>none</DebugType>
+    <OutputPath>$(MSBuildProjectDirectory)\..\dist\SPT_Runtime\user\mods\HideoutAutomation.Server\</OutputPath>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="SPTarkov.Common" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.DI" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.Reflection" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.0" />
+    <PackageReference Include="SPTushonka.Common" Version="4.1.6" PrivateAssets="all" />
+    <PackageReference Include="SPTushonka.DI" Version="4.1.6" PrivateAssets="all" />
+    <PackageReference Include="SPTushonka.Reflection" Version="4.1.6" PrivateAssets="all" />
+    <PackageReference Include="SPTushonka.Server.Core" Version="4.1.6" PrivateAssets="all" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;if $(ConfigurationName) == Debug (&#xD;&#xA;      copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).pdb&quot;&#xD;&#xA;) else (&#xD;&#xA;      copy &quot;$(TargetPath)&quot; &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;)" />
-  </Target>
-
+  <ItemGroup>
+    <Compile Include="ModMetadata.cs;HideoutAutomationRouter.cs;HideoutAutomationService.cs;Models\**\*.cs;Stores\**\*.cs;OnLoad.cs;OnUpdate.cs;Patches\**\*.cs" />
+    <ProjectReference Include="..\HideoutAutomation.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" Private="false" />
+  </ItemGroup>
 </Project>

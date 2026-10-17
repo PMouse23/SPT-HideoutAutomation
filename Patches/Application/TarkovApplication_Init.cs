@@ -26,7 +26,7 @@ namespace HideoutAutomation.Patches.Application
             {
                 if (Globals.Debug)
                     LogHelper.LogInfo("com.tyfon.hideoutinprogress detected");
-                Globals.IsHideoutInProgress = true;
+                Globals.IsHideoutInProgress = false;
                 Type? transferButtonTargetType = ReflectionHelper.FindType("HideoutInProgress.TransferButton");
                 if (transferButtonTargetType == null)
                 {
@@ -35,15 +35,15 @@ namespace HideoutAutomation.Patches.Application
                     return;
                 }
                 Globals.HIPTransferButtonType = transferButtonTargetType;
-                MethodInfo? contributeMethodInfo = transferButtonTargetType.GetMethod("Contribute", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (contributeMethodInfo == null)
+                MethodInfo? contributeMethodInfo = transferButtonTargetType.GetMethod("Contribute", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                if (contributeMethodInfo == null || !typeof(System.Threading.Tasks.Task).IsAssignableFrom(contributeMethodInfo.ReturnType))
                 {
                     if (Globals.Debug)
                         LogHelper.LogError("contributeMethodInfo not found.");
                     return;
                 }
                 Globals.HIPContributeMethodInfo = contributeMethodInfo;
-                FieldInfo? itemRequirementsFieldInfo = transferButtonTargetType.GetField("itemRequirements", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo? itemRequirementsFieldInfo = transferButtonTargetType.GetField("_itemRequirements", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (itemRequirementsFieldInfo == null)
                 {
                     if (Globals.Debug)
@@ -51,7 +51,7 @@ namespace HideoutAutomation.Patches.Application
                     return;
                 }
                 Globals.HIPItemRequirementsFieldInfo = itemRequirementsFieldInfo;
-                FieldInfo? areaDataFieldInfo = transferButtonTargetType.GetField("areaData", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo? areaDataFieldInfo = transferButtonTargetType.GetField("_areaData", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (areaDataFieldInfo == null)
                 {
                     if (Globals.Debug)
@@ -59,6 +59,8 @@ namespace HideoutAutomation.Patches.Application
                     return;
                 }
                 Globals.HIPAreaDataFieldInfo = areaDataFieldInfo;
+                Globals.IsHideoutInProgress = true;
+                LogHelper.LogInfo("Hideout In Progress integration ready (SPT 4.1 fields).");
             }
         }
 

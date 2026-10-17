@@ -10,10 +10,13 @@ using UnityEngine;
 namespace HideoutAutomation
 {
     [BepInPlugin("com.KnotScripts.HideoutAutomation", "HideoutAutomation", VERSION)]
+    [BepInDependency("com.SPT.core", "4.1.4")]
+    [BepInDependency("com.maschine.CraftQueue", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string VERSION = "1.3.0";
+        public const string VERSION = "1.3.2";
 
+        private bool? queueEnabledAtStartup;
         private ConfigEntry<bool> autoConstruct;
         private ConfigEntry<bool> autoInstall;
         private ConfigEntry<bool> autoUpgrade;
@@ -22,6 +25,7 @@ namespace HideoutAutomation
         private ConfigEntry<bool> enableHideoutInProgressSupport;
         private ConfigEntry<bool> enableProductionStacking;
         private ConfigEntry<bool> onlyContributeWhenAreaRequirementsAreMet;
+        private ConfigEntry<float> hideoutInProgressRescanDelay;
         private ConfigEntry<bool> removeAreaRequirements;
         private ConfigEntry<bool> removeCurrencyRequirements;
         private ConfigEntry<bool> removeItemRequirements;
@@ -38,8 +42,8 @@ namespace HideoutAutomation
             {
                 LogHelper.Logger = this.Logger;
 
-                this.enablePatches();
                 this.setConfigurables();
+                this.enablePatches();
             }
             catch (Exception exception)
             {
@@ -115,11 +119,16 @@ namespace HideoutAutomation
             this.enableHideoutInProgressSupport = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressSupport", true, "HIP mod support.");
             this.enableHideoutInProgressSupport.SettingChanged += this.global_SettingChanged;
 
-            this.enableHideoutInProgressConfirmation = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressConfirmation", true, "(HIP mod support) Ask for confirmation once before contributing items after a raid.");
+            this.enableHideoutInProgressConfirmation = this.Config.Bind("HideoutInProgress", "EnableHideoutInProgressConfirmation", true, "(HIP mod support) Ask for confirmation before contributing items.");
             this.enableHideoutInProgressConfirmation.SettingChanged += this.global_SettingChanged;
 
             this.onlyContributeWhenAreaRequirementsAreMet = this.Config.Bind("HideoutInProgress", "OnlyContributeWhenAreaRequirementsAreMet", true, "(HIP mod support) Only contribute when area requirements are met.");
             this.onlyContributeWhenAreaRequirementsAreMet.SettingChanged += this.global_SettingChanged;
+
+            this.hideoutInProgressRescanDelay = this.Config.Bind("HideoutInProgress", "RescanDelaySeconds", 2f,
+                new ConfigDescription("(HIP mod support) Seconds without stash changes before looking for items to contribute again.",
+                    new AcceptableValueRange<float>(0.5f, 30f)));
+            this.hideoutInProgressRescanDelay.SettingChanged += this.global_SettingChanged;
 
             this.setGlobalSettings();
         }
@@ -134,7 +143,11 @@ namespace HideoutAutomation
             Globals.EnableHideoutInProgressConfirmation = this.enableHideoutInProgressConfirmation.Value;
             Globals.IsHideoutInProgressSupportEnabled = this.enableHideoutInProgressSupport.Value;
             Globals.OnlyContributeWhenAreaRequirementsAreMet = this.onlyContributeWhenAreaRequirementsAreMet.Value;
-            Globals.ProductionStacking = this.enableProductionStacking.Value;
+            Globals.HideoutInProgressRescanDelay = this.hideoutInProgressRescanDelay.Value;
+            bool requestedQueue = this.enableProductionStacking.Value && !BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.maschine.CraftQueue");
+            if (queueEnabledAtStartup == null) queueEnabledAtStartup = requestedQueue;
+            else if (queueEnabledAtStartup != requestedQueue) this.Logger.LogWarning("Restart the game to apply the production queue setting.");
+            Globals.ProductionStacking = queueEnabledAtStartup.Value;
             Globals.RemoveAreaRequirements = this.removeAreaRequirements.Value;
             Globals.RemoveCurrencyRequirements = this.removeCurrencyRequirements.Value;
             Globals.RemoveItemRequirements = this.removeItemRequirements.Value;

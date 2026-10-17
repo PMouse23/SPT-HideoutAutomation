@@ -28,7 +28,7 @@ namespace HideoutAutomation.Patches.View
 
         private static bool checkRequirementsWithoutTools(Requirement[] requirements)
         {
-            IEnumerable<Item> allStashItems = Singleton<HideoutClass>.Instance.AllStashItems;
+            IEnumerable<Item> allStashItems = Singleton<HideoutRepresentation>.Instance.AllStashItems;
             foreach (Requirement requirement in requirements)
             {
                 if (requirement is ToolRequirement)
@@ -65,18 +65,23 @@ namespace HideoutAutomation.Patches.View
                 EAreaType areaType = (EAreaType)scheme.areaType;
                 int inProductionArea = Singleton<ProductionService>.Instance.GetAreaCount(areaType);
                 bool isProducingThisScheme = IsProducingThisScheme(produceView, schemeId);
-                if (isProducingThisScheme)
-                    scheme.requirements = scheme.requirements.Where(req => req is not ToolRequirement).ToArray();
-                TasksExtensions.HandleExceptions(Singleton<HideoutClass>.Instance.StartSingleProduction(scheme, async delegate
+                var originalRequirements = scheme.requirements;
+                try
                 {
-                    if (Globals.Debug)
-                        LogHelper.LogInfo($"inProductionArea: {inProductionArea}");
-                    if (inProductionArea == 0)
-                        Singleton<HideoutClass>.Instance.StartProducing(scheme);
-                    Singleton<ProductionService>.Instance.AddUpAreaCount(areaType);
-                    await Task.Delay(500);
-                    await Singleton<ProductionService>.Instance.GetState();
-                }));
+                    if (isProducingThisScheme)
+                        scheme.requirements = originalRequirements.Where(req => req is not ToolRequirement).ToArray();
+                    await Singleton<HideoutRepresentation>.Instance.StartSingleProduction(scheme, delegate
+                    {
+                        if (inProductionArea == 0)
+                            Singleton<HideoutRepresentation>.Instance.StartProducing(scheme);
+                        Singleton<ProductionService>.Instance.AddUpAreaCount(areaType);
+                    });
+                }
+                finally
+                {
+                    scheme.requirements = originalRequirements;
+                }
+                await Singleton<ProductionService>.Instance.GetState();
             }
             catch (Exception ex)
             {
@@ -107,7 +112,7 @@ namespace HideoutAutomation.Patches.View
 
                 string schemeId = scheme._id;
 
-                bool canStart = produceView.Boolean_0
+                bool canStart = produceView.IsRequirementsFulfilled
                     && (produceView.Producer.CanStart
                     || !produceView.Producer.CanStartScheme(scheme));
 
@@ -135,7 +140,7 @@ namespace HideoutAutomation.Patches.View
             }
         }
 
-        private static void patchResultItemIconViewFactory(GClass2440 scheme, string schemeId, int inProduction, HideoutItemViewFactory resultItemIconViewFactory)
+        private static void patchResultItemIconViewFactory(ProductionScheme scheme, string schemeId, int inProduction, HideoutItemViewFactory resultItemIconViewFactory)
         {
             if (inProduction > 0)
                 resultItemIconViewFactory.SetCounterText((scheme.count * inProduction).ToString());

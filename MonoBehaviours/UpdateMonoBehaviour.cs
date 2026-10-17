@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,7 +41,16 @@ namespace HideoutAutomation.MonoBehaviours
         private bool hipCheckContributionCycle = false;
         private bool hipContributionDeniedThisCycle = false;
         private bool hipContributionScanCompleted = false;
+        private InventoryController? hipWatchedInventory;
+        private float hipNextInventoryCheck = 0f;
+        private float hipLastStashChange = -1f;
+
+        // Item id -> how many of that stack an earlier area of the same scan already claimed
+        private readonly Dictionary<string, int> hipReservedItems = new Dictionary<string, int>();
         private bool inDialog = false;
+        private bool hipContributionInProgress;
+        private bool upgradeInProgress;
+        private readonly RequirementReloadPrompt requirementReloadPrompt = new RequirementReloadPrompt();
         private bool? lastRemoveAreaRequirements = null;
         private bool? lastRemoveCurrencyRequirements = null;
         private bool? lastRemoveItemRequirements = null;
@@ -70,6 +80,8 @@ namespace HideoutAutomation.MonoBehaviours
                 this.hideoutInProgressResetContributionConfirmationCycle();
             }
 
+            this.hideoutInProgressWatchStash();
+
             if (this.cancellationToken?.IsCancellationRequested == true)
                 this.startCoroutine();
 
@@ -91,6 +103,7 @@ namespace HideoutAutomation.MonoBehaviours
             this.stopCoroutines();
 
             this.declinedAreaUpdates.Clear();
+            this.requirementReloadPrompt.Reset();
             this.hideoutInProgressResetContributionConfirmationCycle();
             LogHelper.LogInfoWithNotification($"Declined Area(s) reset.");
 
@@ -99,7 +112,8 @@ namespace HideoutAutomation.MonoBehaviours
 
         internal void AddSimpleStashPanel(SimpleStashPanel simpleStashPanel)
         {
-            this.simpleStashPanels.Add(simpleStashPanel);
+            if (!this.simpleStashPanels.Contains(simpleStashPanel))
+                this.simpleStashPanels.Add(simpleStashPanel);
         }
 
         internal void RemoveSimpleStashPanel(SimpleStashPanel simpleStashPanel)
@@ -141,7 +155,7 @@ namespace HideoutAutomation.MonoBehaviours
         private static ScrollRect? getStashScroll(SimpleStashPanel panel)
         {
             FieldInfo field = typeof(SimpleStashPanel)
-                .GetField("_stashScroll", BindingFlags.Instance | BindingFlags.NonPublic);
+                .GetField("_stashScroll", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             return field?.GetValue(panel) as ScrollRect;
         }
@@ -152,8 +166,16 @@ namespace HideoutAutomation.MonoBehaviours
             {
                 itemIds = itemIds.ToArray()
             };
-            string response = RequestHandler.PutJson("/hideoutautomation/CanFindAllItems", JsonConvert.SerializeObject(findItemsRequest));
-            return JsonConvert.DeserializeObject<bool>(response);
+            try
+            {
+                string response = RequestHandler.PutJson("/hideoutautomation/CanFindAllItems", JsonConvert.SerializeObject(findItemsRequest));
+                return JsonConvert.DeserializeObject<bool>(response);
+            }
+            catch (Exception exception)
+            {
+                LogHelper.LogException(exception);
+                return false;
+            }
         }
 
         private IEnumerator coroutine()
@@ -168,26 +190,34 @@ namespace HideoutAutomation.MonoBehaviours
                 this.lastRun = DateTime.Now;
                 if (this.cancellationToken?.IsCancellationRequested == true)
                     yield break;
+                if (this.hipContributionInProgress || this.upgradeInProgress || this.inDialog)
+                    continue;
                 if (RaidHelper.HasRaidLoaded() == false)
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Not in a raid.");
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Handle hideout upgrades.");
-                    HideoutClass hideout = Singleton<HideoutClass>.Instance;
+                    HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
                     if (hideout == null)
                     {
                         if (Globals.Debug)
                             LogHelper.LogInfo($"hideout == null");
                         yield return new WaitForSeconds(0.5f);
                     }
-                    if (this.hasRequirementSettingChanged())
+                    int requirementSettings = getRequirementSettings();
+                    if (this.hasRequirementSettingChanged() && this.requirementReloadPrompt.ShouldPrompt(requirementSettings))
                     {
                         this.showDialogWindow("One of the requirement settings has been changed. Your game needs to be recreated from the backend. Do this now?", () =>
                         {
                             this.reloadHideoutRequirements(hideout);
-                        }, () => { });
-                        yield return new WaitForSeconds(1f);
+                        }, () =>
+                        {
+                            this.requirementReloadPrompt.Defer(requirementSettings);
+                            LogHelper.LogInfoWithNotification("Requirement reload deferred. Restart the game or press the reset shortcut to ask again.");
+                        });
+                        yield return new WaitUntil(() => !this.inDialog && !this.upgradeInProgress);
+                        continue; // Re-read the singleton after a backend recreation.
                     }
                     if (hideout != null && hideout.AreaDatas.Count > 0)
                     {
@@ -197,6 +227,11 @@ namespace HideoutAutomation.MonoBehaviours
                             && Globals.EnableHideoutInProgressConfirmation
                             && this.hipContributionScanCompleted == false
                             && this.hipContributionDeniedThisCycle == false;
+
+                        // Each scan starts fresh, so an area is never listed twice and a stack is never offered to two areas
+                        this.hipReservedItems.Clear();
+                        if (shouldScanHIPContributions)
+                            this.hipPendingCandidates.Clear();
 
                         foreach (AreaData data in hideout.AreaDatas)
                         {
@@ -227,10 +262,8 @@ namespace HideoutAutomation.MonoBehaviours
                                     HIPContributionCandidate? candidate = this.hideoutInProgressCreateContributionCandidate(hideout, data, areaType, requirements);
                                     if (candidate != null)
                                     {
-                                        this.hideoutInProgressContribute(candidate.AreaData, candidate.ItemRequirements);
-                                        foreach (string msg in candidate.ContributionMessages)
-                                            LogHelper.LogInfoWithNotification(msg);
-                                        yield return this.refreshSimpleStashPanels();
+                                        Task contribution = this.hideoutInProgressExecuteContributionCandidates(new[] { candidate });
+                                        yield return new WaitUntil(() => contribution.IsCompleted);
                                     }
                                     yield return new WaitForSeconds(0.5f);
                                 }
@@ -241,11 +274,7 @@ namespace HideoutAutomation.MonoBehaviours
                                 case EAreaStatus.ReadyToUpgrade:
                                     if (this.isAllowedToConstuctOrUpdate(data, areaType, status))
                                     {
-                                        Action upgradeAction = new Action(() =>
-                                        {
-                                            data.UpgradeAction();
-                                            LogHelper.LogInfoWithNotification($"{name} upgrade started.");
-                                        });
+                                        Action upgradeAction = () => { _ = this.upgradeAreaAsync(data, status); };
                                         if (Globals.UseDialogWindow)
                                         {
                                             string description = this.getUpgradeDescription(data);
@@ -261,16 +290,15 @@ namespace HideoutAutomation.MonoBehaviours
                                         }
                                         else
                                             upgradeAction.Invoke();
-                                        yield return new WaitForSeconds(0.5f);
+                                        yield return new WaitUntil(() => !this.inDialog && !this.upgradeInProgress);
                                     }
                                     break;
                                 case EAreaStatus.ReadyToInstallConstruct:
                                 case EAreaStatus.ReadyToInstallUpgrade:
                                     if (Globals.AutoInstall)
                                     {
-                                        data.UpgradeAction();
-                                        LogHelper.LogInfoWithNotification($"{name} upgrade installed.");
-                                        yield return new WaitForSeconds(0.5f);
+                                        Task upgrade = this.upgradeAreaAsync(data, status);
+                                        yield return new WaitUntil(() => upgrade.IsCompleted);
                                     }
                                     break;
                             }
@@ -291,11 +319,11 @@ namespace HideoutAutomation.MonoBehaviours
 
         private int getItemCount(string templateId, bool isSpawnedInSession)
         {
-            HideoutClass hideout = Singleton<HideoutClass>.Instance;
-            if (hideout == null || hideout.InventoryController_0 == null)
+            HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
+            if (hideout == null || hideout._inventoryController == null)
                 return 0;
             int count = 0;
-            IEnumerable<Item> items = hideout.InventoryController_0.Inventory.GetAllItemByTemplate(templateId);
+            IEnumerable<Item> items = hideout._inventoryController.Inventory.GetAllItemByTemplate(templateId);
             foreach (Item item in items)
             {
                 if (isSpawnedInSession == false || item.SpawnedInSession == true)
@@ -381,6 +409,15 @@ namespace HideoutAutomation.MonoBehaviours
                 || this.lastRemoveTraderRequirements != Globals.RemoveTraderRequirements;
         }
 
+        private static int getRequirementSettings()
+        {
+            return (Globals.RemoveAreaRequirements ? 1 : 0)
+                | (Globals.RemoveCurrencyRequirements ? 2 : 0)
+                | (Globals.RemoveItemRequirements ? 4 : 0)
+                | (Globals.RemoveSkillRequirements ? 8 : 0)
+                | (Globals.RemoveTraderRequirements ? 16 : 0);
+        }
+
         private void investigate()
         {
             TimeSpan? dtm = DateTime.Now - this.lastRun;
@@ -389,7 +426,7 @@ namespace HideoutAutomation.MonoBehaviours
                 LogHelper.LogErrorWithNotification("HA: Appears to have raid loaded");
             if (this.cancellationToken?.IsCancellationRequested == true)
                 LogHelper.LogErrorWithNotification("HA: CancellationRequested");
-            HideoutClass hideout = Singleton<HideoutClass>.Instance;
+            HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
             if (hideout == null)
             {
                 if (Globals.Debug)
@@ -426,6 +463,33 @@ namespace HideoutAutomation.MonoBehaviours
             return true;
         }
 
+        private async Task upgradeAreaAsync(AreaData data, EAreaStatus expectedStatus)
+        {
+            if (this.upgradeInProgress || this.hipContributionInProgress || RaidHelper.HasRaidLoaded() || data.Status != expectedStatus)
+                return;
+            if ((expectedStatus == EAreaStatus.ReadyToConstruct || expectedStatus == EAreaStatus.ReadyToUpgrade)
+                && !this.isAllowedToConstuctOrUpdate(data, data.Template.Type, expectedStatus))
+                return;
+            if ((expectedStatus == EAreaStatus.ReadyToInstallConstruct || expectedStatus == EAreaStatus.ReadyToInstallUpgrade)
+                && !Globals.AutoInstall)
+                return;
+            this.upgradeInProgress = true;
+            try
+            {
+                await data.UpgradeAction();
+                bool installing = expectedStatus == EAreaStatus.ReadyToInstallConstruct || expectedStatus == EAreaStatus.ReadyToInstallUpgrade;
+                LogHelper.LogInfoWithNotification($"{data.Template.Name} upgrade {(installing ? "installed" : "started")}.");
+            }
+            catch (Exception exception)
+            {
+                LogHelper.LogExceptionToConsole(exception);
+            }
+            finally
+            {
+                this.upgradeInProgress = false;
+            }
+        }
+
         private bool isAllowToHandover(Requirement requirement)
         {
             if (Globals.Debug)
@@ -443,7 +507,7 @@ namespace HideoutAutomation.MonoBehaviours
 
         private bool isBlockedCurrency(Item item, int handoverValue)
         {
-            if (item is not MoneyItemClass moneyItemClass)
+            if (item is not Money moneyItemClass)
                 return false;
             int itemCount = this.getItemCount(item.TemplateId, item.SpawnedInSession);
             handoverValue = (int)(handoverValue * Globals.ThresholdCurrencyHandover);
@@ -468,8 +532,9 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private void reloadHideoutRequirements(HideoutClass? hideout)
+        private void reloadHideoutRequirements(HideoutRepresentation? hideout)
         {
+            this.requirementReloadPrompt.Reset();
             this.lastRemoveAreaRequirements = null;
             this.lastRemoveCurrencyRequirements = null;
             this.lastRemoveItemRequirements = null;
@@ -478,26 +543,39 @@ namespace HideoutAutomation.MonoBehaviours
 
             if (hideout == null)
                 return;
-            foreach (AreaData areaData in hideout.AreaDatas)
-                this.reloadRequirements(areaData);
-
-            if (Globals.Debug)
-                LogHelper.LogInfo("Reloaded hideout requirements.");
+            _ = this.reloadRequirements();
         }
 
-        private void reloadRequirements(AreaData data)
+        private async Task reloadRequirements()
         {
-            if (TarkovApplication.Exist(out TarkovApplication? tarkovApplication))
+            if (this.upgradeInProgress || this.hipContributionInProgress || RaidHelper.HasRaidLoaded())
+                return;
+            this.upgradeInProgress = true;
+            try
             {
-                tarkovApplication.HideoutControllerAccess.UnloadHideout();
-                tarkovApplication.RecreateCurrentBackend();
+                if (TarkovApplication.Exist(out TarkovApplication? tarkovApplication))
+                {
+                    await tarkovApplication.HideoutControllerAccess.UnloadHideout();
+                    await tarkovApplication.RecreateCurrentBackend();
+                    LogHelper.LogInfo("Reloaded hideout requirements.");
+                }
+            }
+            catch (Exception exception)
+            {
+                LogHelper.LogExceptionToConsole(exception);
+            }
+            finally
+            {
+                this.upgradeInProgress = false;
             }
         }
 
         private List<Requirement> removeRequirements(AreaData data)
         {
             List<Requirement> requirementsToRemove = [];
-            RelatedRequirements requirements = data.NextStage.Requirements;
+            RelatedRequirements? requirements = data.NextStage?.Requirements;
+            if (requirements == null)
+                return requirementsToRemove;
 
             if (Globals.RemoveAreaRequirements == false
              && Globals.RemoveCurrencyRequirements == false
@@ -510,14 +588,14 @@ namespace HideoutAutomation.MonoBehaviours
             {
                 if (Globals.RemoveAreaRequirements && requirement is AreaRequirement areaRequirement)
                     requirementsToRemove.Add(requirement);
-                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass)
+                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is Money)
                     requirementsToRemove.Add(requirement);
-                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not MoneyItemClass)
+                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not Money)
                     requirementsToRemove.Add(requirement);
                 else if (Globals.RemoveSkillRequirements && requirement is SkillRequirement skillRequirement)
                     requirementsToRemove.Add(requirement);
-                else if (Globals.RemoveTraderRequirements && requirement is TraderUnlockRequirement traderUnlockRequirement
-                                                          || requirement is TraderLoyaltyRequirement traderLoyaltyRequirement)
+                else if (Globals.RemoveTraderRequirements && (requirement is TraderUnlockRequirement
+                                                          || requirement is TraderLoyaltyRequirement))
                     requirementsToRemove.Add(requirement);
             }
             if (requirementsToRemove.Count > 0)
@@ -572,20 +650,63 @@ namespace HideoutAutomation.MonoBehaviours
         #region HideoutInProgress
 
         private string hideoutInProgressBuildContributionDescription(IEnumerable<HIPContributionCandidate> candidates)
+            => HIPContributionText.BuildPrompt(candidates);
+
+        /// <summary>
+        /// Rescans for contributions after the stash changes, instead of only once per raid cycle.
+        /// Event driven: nothing runs until an item is added, removed or restacked, and a burst of changes
+        /// leads to one rescan once the stash has been quiet. A declined prompt stays declined for the cycle.
+        /// </summary>
+        private void hideoutInProgressWatchStash()
         {
-            List<string> lines = [];
-            foreach (HIPContributionCandidate candidate in candidates)
+            float now = Time.unscaledTime;
+            if (now >= this.hipNextInventoryCheck)
             {
-                lines.Add(string.Empty);
-                lines.Add($"Area: {candidate.AreaData.Template.Name}");
-                foreach (string contributionMessage in candidate.ContributionMessages)
-                    lines.Add($"- {contributionMessage}");
+                this.hipNextInventoryCheck = now + 1f;
+                InventoryController? inventory = Singleton<HideoutRepresentation>.Instance?._inventoryController;
+                if (!ReferenceEquals(inventory, this.hipWatchedInventory))
+                {
+                    if (this.hipWatchedInventory != null)
+                    {
+                        this.hipWatchedInventory.AddItemEvent -= this.hideoutInProgressOnItemAdded;
+                        this.hipWatchedInventory.RemoveItemEvent -= this.hideoutInProgressOnItemRemoved;
+                        this.hipWatchedInventory.RefreshItemEvent -= this.hideoutInProgressOnItemRefreshed;
+                    }
+                    this.hipWatchedInventory = inventory;
+                    if (inventory != null)
+                    {
+                        inventory.AddItemEvent += this.hideoutInProgressOnItemAdded;
+                        inventory.RemoveItemEvent += this.hideoutInProgressOnItemRemoved;
+                        inventory.RefreshItemEvent += this.hideoutInProgressOnItemRefreshed;
+                    }
+                }
             }
 
-            if (lines.Count == 0)
-                return string.Empty;
+            if (this.hipLastStashChange < 0f
+                || now - this.hipLastStashChange < Globals.HideoutInProgressRescanDelay
+                || this.hipContributionInProgress
+                || this.inDialog)
+                return;
 
-            return $"Contribute the following Hideout In Progress items?{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+            this.hipLastStashChange = -1f;
+            if (this.hipContributionScanCompleted && this.hipContributionDeniedThisCycle == false)
+            {
+                this.hipContributionScanCompleted = false;
+                if (Globals.Debug)
+                    LogHelper.LogInfo("(HIP): stash changed, rescanning.");
+            }
+        }
+
+        private void hideoutInProgressOnItemAdded(AddItemEventArgs args) => this.hideoutInProgressMarkStashChanged(args.Status);
+
+        private void hideoutInProgressOnItemRemoved(RemoveItemEventArgs args) => this.hideoutInProgressMarkStashChanged(args.Status);
+
+        private void hideoutInProgressOnItemRefreshed(RefreshItemEventArgs args) => this.hipLastStashChange = Time.unscaledTime;
+
+        private void hideoutInProgressMarkStashChanged(CommandStatus status)
+        {
+            if (status == CommandStatus.Succeed)
+                this.hipLastStashChange = Time.unscaledTime;
         }
 
         /// <summary>
@@ -593,70 +714,129 @@ namespace HideoutAutomation.MonoBehaviours
         /// https://github.com/tyfon7/hip/blob/main/src/TransferButton.cs
         /// </summary>
         /// <returns></returns>
-        private void hideoutInProgressContribute(AreaData areaData, ItemRequirement[] itemRequirements)
+        private async Task<bool> hideoutInProgressContribute(AreaData areaData, ItemRequirement[] itemRequirements)
         {
             Type? transferButtonType = Globals.HIPTransferButtonType;
             if (Globals.Debug)
                 LogHelper.LogInfo($"(HIP): transferButtonType={transferButtonType}");
-            if (transferButtonType != null)
+            if (transferButtonType == null || Globals.HIPItemRequirementsFieldInfo == null ||
+                Globals.HIPAreaDataFieldInfo == null || Globals.HIPContributeMethodInfo == null)
+                return false;
+
+            Component? transferButton = null;
+            try
             {
-                object transferButton = Activator.CreateInstance(transferButtonType);
-                Globals.HIPItemRequirementsFieldInfo?.SetValue(transferButton, itemRequirements);
-                Globals.HIPAreaDataFieldInfo?.SetValue(transferButton, areaData);
-                Globals.HIPContributeMethodInfo?.Invoke(transferButton, null);
+                // TransferButton is a Unity component. Creating it with Activator bypasses Unity's lifecycle.
+                transferButton = this.gameObject.AddComponent(transferButtonType);
+                Globals.HIPItemRequirementsFieldInfo.SetValue(transferButton, itemRequirements);
+                Globals.HIPAreaDataFieldInfo.SetValue(transferButton, areaData);
+                int countBefore = itemRequirements.Sum(requirement => requirement.BaseCount);
+                if (Globals.HIPContributeMethodInfo.Invoke(transferButton, null) is not Task contribution)
+                    return false;
+                await contribution;
+                return itemRequirements.Sum(requirement => requirement.BaseCount) < countBefore;
+            }
+            catch (Exception exception)
+            {
+                LogHelper.LogExceptionToConsole(exception);
+                return false;
+            }
+            finally
+            {
+                if (transferButton != null)
+                    UnityEngine.Object.Destroy(transferButton);
             }
         }
 
-        private HIPContributionCandidate? hideoutInProgressCreateContributionCandidate(HideoutClass hideout, AreaData data, EAreaType areaType, List<Requirement> requirements)
+        private HIPContributionCandidate? hideoutInProgressCreateContributionCandidate(HideoutRepresentation hideout, AreaData data, EAreaType areaType, List<Requirement> requirements)
         {
             if (Globals.Debug)
                 LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
 
             List<string> itemIds = [];
             List<string> contributionMessages = [];
-            ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
+            List<HIPContributionLine> lines = [];
+            ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not Money).ToArray();
             foreach (ItemRequirement itemRequirement in itemRequirements)
             {
-                var contributions = hideout.method_21([itemRequirement]);
+                var contributions = hideout.GetItemReferences([itemRequirement]);
                 if (contributions.Count > 0)
                 {
                     if (Globals.Debug)
                         LogHelper.LogInfo($"(HIP): contributions.Count={contributions.Count}");
+                    int count = 0;
                     foreach (var contribution in contributions)
                     {
                         string itemId = contribution.Item.Id;
-                        string contributionMessage = $"Contribute {contribution.CurrentItemCount} of {contribution.Item.LocalizedName()}.";
+                        this.hipReservedItems.TryGetValue(itemId, out int reserved);
+                        int available = Math.Min(contribution.Count, this.hideoutInProgressStackSize(contribution.Item) - reserved);
+                        if (available <= 0)
+                            continue;
+
+                        this.hipReservedItems[itemId] = reserved + available;
+                        count += available;
+                        string contributionMessage = $"Contribute {available} of {contribution.Item.LocalizedName()}.";
                         itemIds.Add(itemId);
                         contributionMessages.Add(contributionMessage);
                     }
+                    if (count > 0)
+                        lines.Add(new HIPContributionLine(itemRequirement.Item.LocalizedName(), count, itemRequirement.BaseCount));
                 }
             }
 
             if (itemIds.Count == 0 || this.CanFindAllItems(itemIds) == false)
                 return null;
 
-            return new HIPContributionCandidate(data, areaType, itemRequirements, itemIds, contributionMessages);
+            return new HIPContributionCandidate(data, areaType, itemRequirements, itemIds, contributionMessages, lines);
         }
 
-        private bool hideoutInProgressExecuteContributionCandidates(IEnumerable<HIPContributionCandidate> candidates)
+        private int hideoutInProgressStackSize(Item item) => Math.Max(1, item.StackObjectsCount);
+
+        private async Task hideoutInProgressExecuteContributionCandidates(IEnumerable<HIPContributionCandidate> candidates)
         {
+            if (this.hipContributionInProgress || this.upgradeInProgress || RaidHelper.HasRaidLoaded())
+                return;
+            this.hipContributionInProgress = true;
             bool contributed = false;
-            foreach (HIPContributionCandidate candidate in candidates)
+            List<HIPContributionCandidate> donated = [];
+            try
             {
-                if (this.CanFindAllItems(candidate.ItemIds) == false)
+                foreach (HIPContributionCandidate candidate in candidates)
                 {
-                    if (Globals.Debug)
-                        LogHelper.LogInfo($"(HIP): stale candidate skipped for area {candidate.AreaType}.");
-                    continue;
+                    if (RaidHelper.HasRaidLoaded())
+                        break;
+                    var hideout = Singleton<HideoutRepresentation>.Instance;
+                    if (hideout == null || !hideout.AreaDatas.Contains(candidate.AreaData) ||
+                        !interactableStatuses.Contains(candidate.AreaData.Status))
+                        continue;
+                    if (this.CanFindAllItems(candidate.ItemIds) == false)
+                    {
+                        if (Globals.Debug)
+                            LogHelper.LogInfo($"(HIP): stale candidate skipped for area {candidate.AreaType}.");
+                        continue;
+                    }
+
+                    if (await this.hideoutInProgressContribute(candidate.AreaData, candidate.ItemRequirements))
+                    {
+                        contributed = true;
+                        donated.Add(candidate);
+                        foreach (string contributionMessage in candidate.ContributionMessages)
+                            LogHelper.LogInfo(contributionMessage);
+                    }
                 }
-
-                this.hideoutInProgressContribute(candidate.AreaData, candidate.ItemRequirements);
-                contributed = true;
-                foreach (string contributionMessage in candidate.ContributionMessages)
-                    LogHelper.LogInfoWithNotification(contributionMessage);
+                if (donated.Count > 0)
+                    LogHelper.LogInfoWithNotification(HIPContributionText.BuildDonated(donated));
+                if (contributed && !RaidHelper.HasRaidLoaded())
+                    this.StartCoroutine(this.refreshSimpleStashPanels());
             }
-
-            return contributed;
+            catch (Exception exception)
+            {
+                LogHelper.LogExceptionToConsole(exception);
+            }
+            finally
+            {
+                this.hipContributionInProgress = false;
+            }
         }
 
         private bool hideoutInProgressRequirementsAreMet(List<Requirement> requirements)
@@ -697,8 +877,7 @@ namespace HideoutAutomation.MonoBehaviours
 
                 if (Globals.Debug)
                     LogHelper.LogInfo("(HIP): contribution prompt accepted.");
-                if (this.hideoutInProgressExecuteContributionCandidates(candidates))
-                    this.StartCoroutine(this.refreshSimpleStashPanels());
+                _ = this.hideoutInProgressExecuteContributionCandidates(candidates);
             }, () =>
             {
                 this.hipContributionDeniedThisCycle = true;

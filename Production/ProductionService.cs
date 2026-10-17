@@ -9,29 +9,35 @@ using Newtonsoft.Json;
 using SPT.Common.Http;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 #nullable enable
 
 namespace HideoutAutomation.Production
 {
-    internal class ProductionService
+    internal class ProductionService : IDisposable
     {
         private readonly List<ProduceView> produceViews = [];
+        private readonly HashSet<EAreaType> collecting = new();
+        private readonly Action<ItemsProducerBase> onProductionComplete;
+        public HideoutRepresentation Owner { get; }
         private StateResponse state = new StateResponse() { areaCount = [], productions = [], stackCount = [] };
 
-        public ProductionService()
+        public ProductionService(HideoutRepresentation owner)
         {
-            Singleton<HideoutClass>.Instance.ProductionController.OnProductionComplete += async (obj) =>
+            Owner = owner;
+            onProductionComplete = async (obj) =>
             {
+                if (!collecting.Add(obj.AreaType)) return;
                 try
                 {
                     if (RaidHelper.HasRaidLoaded())
                     {
-                        Singleton<ProductionService>.Instance = null;
+                        this.produceViews.Clear();
                         return;
                     }
-                    if (Globals.ProductionStacking == false)
+                    if (Globals.ProductionStacking == false || !ReferenceEquals(Owner, Singleton<HideoutRepresentation>.Instance))
                         return;
 
                     var producer = obj;
@@ -47,8 +53,9 @@ namespace HideoutAutomation.Production
                     if (Globals.Debug)
                         LogHelper.LogInfoWithNotification($"{areaType} GetProducedItems {completedSchemeId}.");
                     bool showItemsListWindow = false;
-                    if (this.CanFindProduction(completedSchemeId))
-                        await Singleton<HideoutClass>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow);
+                    if (!this.CanFindProduction(completedSchemeId) || !await Singleton<HideoutRepresentation>.Instance.GetProducedItems(producer, completedSchemeId, showItemsListWindow))
+                        return;
+                    if (!ReferenceEquals(Owner, Singleton<HideoutRepresentation>.Instance)) return;
                     producer.GetItems(completedSchemeId);
                     int count = this.GetAreaCount(areaType);
                     if (count > 0)
@@ -56,9 +63,10 @@ namespace HideoutAutomation.Production
                         await Task.Delay(500);
                         if (Globals.Debug)
                             LogHelper.LogInfoWithNotification($"GetAreaCount {count}.");
+                        if (!ReferenceEquals(Owner, Singleton<HideoutRepresentation>.Instance)) return;
                         ProductionBuild? next = await this.startFromStack(areaType);
                         if (next != null)
-                            Singleton<HideoutClass>.Instance.StartProducing(next);
+                            Singleton<HideoutRepresentation>.Instance.StartProducing(next);
                     }
 
                     await this.GetState();
@@ -68,19 +76,39 @@ namespace HideoutAutomation.Production
                 {
                     LogHelper.LogExceptionToConsole(ex);
                 }
+                finally { collecting.Remove(obj.AreaType); }
             };
+            Owner.ProductionController.OnProductionComplete += onProductionComplete;
+        }
+
+        public void Dispose()
+        {
+            Owner.ProductionController.OnProductionComplete -= onProductionComplete;
+            produceViews.Clear();
+        }
+
+        public async Task SetEnabled(bool enabled)
+        {
+            await RequestHandler.PutJsonAsync("/hideoutautomation/QueueEnabled", JsonConvert.SerializeObject(new { enabled }));
+            if (!enabled) return;
+            await GetState();
+            foreach (var area in state.areaCount.Keys.ToArray())
+            {
+                if (!ReferenceEquals(Owner, Singleton<HideoutRepresentation>.Instance)) return;
+                var next = await startFromStack(area);
+                if (next != null) Owner.StartProducing(next);
+            }
         }
 
         public void AddProduceView(ProduceView produceView)
         {
-            this.produceViews.Add(produceView);
+            if (!this.produceViews.Contains(produceView)) this.produceViews.Add(produceView);
         }
 
         public void AddUpAreaCount(EAreaType areaType)
         {
             int areaCount = this.GetAreaCount(areaType);
-            if (this.state.areaCount?.ContainsKey(areaType) == true)
-                this.state.areaCount[areaType] = areaCount + 1;
+            this.state.areaCount[areaType] = areaCount + 1;
         }
 
         public int GetAreaCount(EAreaType areaType)
@@ -128,11 +156,11 @@ namespace HideoutAutomation.Production
 
         public void UpdateProduceViews()
         {
-            foreach (ProduceView produceView in produceViews)
-                produceView.UpdateView();
+            foreach (ProduceView produceView in produceViews.ToArray())
+                if (produceView != null) produceView.UpdateView();
         }
 
-        private static bool isContinuousScheme(GClass2431 producer, string completedSchemeId)
+        private static bool isContinuousScheme(ItemsProducerBase producer, string completedSchemeId)
         {
             return producer.Schemes.ContainsKey(completedSchemeId) && producer.Schemes[completedSchemeId].continuous;
         }

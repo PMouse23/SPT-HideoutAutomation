@@ -2,7 +2,7 @@
 
 namespace HideoutAutomation.Production
 {
-    internal class ProductionBuild : ProductionBuildAbstractClass
+    internal class ProductionBuild : BaseHideoutScheme
     {
         public int AreaType
         {

@@ -1,31 +1,39 @@
 ﻿using HarmonyLib;
-using Microsoft.Extensions.DependencyInjection;
 using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.Controllers;
-using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Helpers;
+using SPTarkov.Server.Core.Helpers.Profile;
 using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Services;
 using System.Linq;
 using System.Reflection;
 
 namespace HideoutAutomation.Server.Patches
 {
+    [SPTarkov.DI.Annotations.Injectable]
     public class GameStart : AbstractPatch
     {
+        private static HideoutAutomationService _hideoutAutomationService = default!;
+        private static ProfileHelper _profileHelper = default!;
+        private static SPTarkov.Server.Core.Models.Spt.Tables.HideoutTable _hideoutTable = default!;
+        public GameStart(HideoutAutomationService hideoutAutomationService, ProfileHelper profileHelper, SPTarkov.Server.Core.Models.Spt.Tables.HideoutTable hideoutTable)
+        {
+            _hideoutAutomationService = hideoutAutomationService;
+            _profileHelper = profileHelper;
+            _hideoutTable = hideoutTable;
+        }
+
         [PatchPostfix]
         public static void PatchPostfix(MongoId sessionId)
         {
-            if (ServiceLocator.ServiceProvider.GetService<HideoutAutomationService>() is HideoutAutomationService automationService)
+            if (_hideoutAutomationService is HideoutAutomationService automationService)
             {
-                automationService.StartFromStack(sessionId);
+                automationService.SetQueueEnabled(sessionId, false).GetAwaiter().GetResult();
             }
 
             //HACK Fix player profile
-            if (ServiceLocator.ServiceProvider.GetService<ProfileHelper>() is ProfileHelper profileHelper
-                && ServiceLocator.ServiceProvider.GetService<DatabaseService>() is DatabaseService databaseService)
+            if (_profileHelper is ProfileHelper profileHelper
+                && _hideoutTable is SPTarkov.Server.Core.Models.Spt.Tables.HideoutTable databaseService)
             {
-                var hideout = databaseService.GetHideout();
+                var hideout = databaseService;
                 if (hideout == null)
                     return;
                 var pmcData = profileHelper.GetPmcProfile(sessionId);
