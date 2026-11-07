@@ -1,4 +1,5 @@
 ﻿using BepInEx.Logging;
+using EFT.Communications;
 using EFT.UI;
 using System;
 using System.Diagnostics;
@@ -28,7 +29,7 @@ namespace HideoutAutomation.Helpers
         internal static void LogErrorWithNotification(string error)
         {
             LogError(error);
-            NotificationManagerClass.DisplayMessageNotification(error, EFT.Communications.ENotificationDurationType.Default, EFT.Communications.ENotificationIconType.Alert, Color.red);
+            NotificationManager.DisplayMessageNotification(error, EFT.Communications.ENotificationDurationType.Default, EFT.Communications.ENotificationIconType.Alert, Color.red);
         }
 
         internal static void LogException(Exception exception)
@@ -58,7 +59,7 @@ namespace HideoutAutomation.Helpers
         internal static void LogInfoWithNotification(string info)
         {
             LogInfo(info);
-            NotificationManagerClass.DisplayMessageNotification(info);
+            NotificationManager.DisplayMessageNotification(info);
         }
 
         internal static void LogStackTraceToConsole(StackTrace stackTrace)

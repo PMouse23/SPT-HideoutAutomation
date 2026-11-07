@@ -1,11 +1,10 @@
 ﻿using HarmonyLib;
-using Microsoft.Extensions.DependencyInjection;
 using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.Controllers;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Helpers;
+using SPTarkov.Server.Core.Helpers.Profile;
 using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 using System.Linq;
 using System.Reflection;
 
@@ -17,10 +16,10 @@ namespace HideoutAutomation.Server.Patches
         public static void PatchPostfix(MongoId sessionId)
         {
             //HACK Fix player profile
-            if (ServiceLocator.ServiceProvider.GetService<ProfileHelper>() is ProfileHelper profileHelper
-                && ServiceLocator.ServiceProvider.GetService<DatabaseService>() is DatabaseService databaseService)
+            if (ModServices.Get<ProfileHelper>() is ProfileHelper profileHelper
+                && ModServices.Get<HideoutTable>() is HideoutTable hideoutTable)
             {
-                var hideout = databaseService.GetHideout();
+                var hideout = hideoutTable;
                 if (hideout == null)
                     return;
                 var pmcData = profileHelper.GetPmcProfile(sessionId);

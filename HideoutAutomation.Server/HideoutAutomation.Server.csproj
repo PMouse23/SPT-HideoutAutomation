@@ -6,7 +6,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>HideoutAutomation.Server</AssemblyName>
     <OutputType>Library</OutputType>
     <SPTModType>Server</SPTModType>
@@ -17,14 +17,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SPTarkov.Common" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.DI" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.Reflection" Version="4.0.0" />
-    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.0" />
+    <PackageReference Include="SPTarkov.Common" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.DI" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.1.2" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;if $(ConfigurationName) == Debug (&#xD;&#xA;      copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;D:\Offline\SPT\user\mods\$(TargetName)\$(TargetName).pdb&quot;&#xD;&#xA;) else (&#xD;&#xA;      copy &quot;$(TargetPath)&quot; &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;)" />
+    <Exec Command="if not exist &quot;D:\Offline\SPT_Runtime\user\mods\$(TargetName)&quot; mkdir &quot;D:\Offline\SPT_Runtime\user\mods\$(TargetName)&quot;&#xD;&#xA;copy &quot;$(TargetPath)&quot; &quot;D:\Offline\SPT_Runtime\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;if $(ConfigurationName) == Debug (&#xD;&#xA;      copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;D:\Offline\SPT_Runtime\user\mods\$(TargetName)\$(TargetName).pdb&quot;&#xD;&#xA;) else (&#xD;&#xA;      if not exist &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT_Runtime\user\mods\$(TargetName)&quot; mkdir &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT_Runtime\user\mods\$(TargetName)&quot;&#xD;&#xA;      copy &quot;$(TargetPath)&quot; &quot;D:\SOURCE\KnotScripts\Releases\HideoutAutomation\SPT_Runtime\user\mods\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;)" />
   </Target>
 
 </Project>

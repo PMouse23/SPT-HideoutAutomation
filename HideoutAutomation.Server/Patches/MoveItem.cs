@@ -1,9 +1,8 @@
 ﻿using HarmonyLib;
-using Microsoft.Extensions.DependencyInjection;
 using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.Controllers;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Helpers;
+using SPTarkov.Server.Core.Helpers.Profile;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
@@ -19,7 +18,7 @@ namespace HideoutAutomation.Server.Patches
         [PatchPrefix]
         public static bool PatchPrefix(PmcData pmcData, InventoryMoveRequestData moveRequest, MongoId sessionId, ItemEventRouterResponse output)
         {
-            if (ServiceLocator.ServiceProvider.GetService<InventoryHelper>() is InventoryHelper inventoryHelper
+            if (ModServices.Get<InventoryHelper>() is InventoryHelper inventoryHelper
                 && moveRequest.Item != null)
             {
                 var ownerInventoryItems = inventoryHelper.GetOwnerInventoryItems(moveRequest, moveRequest.Item.Value, sessionId);

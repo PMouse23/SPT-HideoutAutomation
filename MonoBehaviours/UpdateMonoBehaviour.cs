@@ -130,10 +130,7 @@ namespace HideoutAutomation.MonoBehaviours
 
         private static ScrollRect? getStashScroll(SimpleStashPanel panel)
         {
-            FieldInfo field = typeof(SimpleStashPanel)
-                .GetField("_stashScroll", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            return field?.GetValue(panel) as ScrollRect;
+            return panel._stashScroll;
         }
 
         private bool CanFindAllItems(IEnumerable<string> itemIds)
@@ -164,7 +161,7 @@ namespace HideoutAutomation.MonoBehaviours
                         LogHelper.LogInfo($"Not in a raid.");
                     if (Globals.Debug)
                         LogHelper.LogInfo($"Handle hideout upgrades.");
-                    HideoutClass hideout = Singleton<HideoutClass>.Instance;
+                    HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
                     if (hideout == null)
                     {
                         if (Globals.Debug)
@@ -281,11 +278,11 @@ namespace HideoutAutomation.MonoBehaviours
 
         private int getItemCount(string templateId, bool isSpawnedInSession)
         {
-            HideoutClass hideout = Singleton<HideoutClass>.Instance;
-            if (hideout == null || hideout.InventoryController_0 == null)
+            HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
+            if (hideout == null || hideout._inventoryController == null)
                 return 0;
             int count = 0;
-            IEnumerable<Item> items = hideout.InventoryController_0.Inventory.GetAllItemByTemplate(templateId);
+            IEnumerable<Item> items = hideout._inventoryController.Inventory.GetAllItemByTemplate(templateId);
             foreach (Item item in items)
             {
                 if (isSpawnedInSession == false || item.SpawnedInSession == true)
@@ -379,7 +376,7 @@ namespace HideoutAutomation.MonoBehaviours
                 LogHelper.LogErrorWithNotification("HA: Appears to have raid loaded");
             if (this.cancellationToken?.IsCancellationRequested == true)
                 LogHelper.LogErrorWithNotification("HA: CancellationRequested");
-            HideoutClass hideout = Singleton<HideoutClass>.Instance;
+            HideoutRepresentation hideout = Singleton<HideoutRepresentation>.Instance;
             if (hideout == null)
             {
                 if (Globals.Debug)
@@ -433,7 +430,7 @@ namespace HideoutAutomation.MonoBehaviours
 
         private bool isBlockedCurrency(Item item, int handoverValue)
         {
-            if (item is not MoneyItemClass moneyItemClass)
+            if (item is not Money moneyItemClass)
                 return false;
             int itemCount = this.getItemCount(item.TemplateId, item.SpawnedInSession);
             handoverValue = (int)(handoverValue * Globals.ThresholdCurrencyHandover);
@@ -458,7 +455,7 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private void reloadHideoutRequirements(HideoutClass? hideout)
+        private void reloadHideoutRequirements(HideoutRepresentation? hideout)
         {
             this.lastRemoveAreaRequirements = null;
             this.lastRemoveCurrencyRequirements = null;
@@ -500,9 +497,9 @@ namespace HideoutAutomation.MonoBehaviours
             {
                 if (Globals.RemoveAreaRequirements && requirement is AreaRequirement areaRequirement)
                     requirementsToRemove.Add(requirement);
-                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is MoneyItemClass)
+                else if (Globals.RemoveCurrencyRequirements && requirement is ItemRequirement itemRequirement && itemRequirement.Item is Money)
                     requirementsToRemove.Add(requirement);
-                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not MoneyItemClass)
+                else if (Globals.RemoveItemRequirements && requirement is ItemRequirement itemRequirement2 && itemRequirement2.Item is not Money)
                     requirementsToRemove.Add(requirement);
                 else if (Globals.RemoveSkillRequirements && requirement is SkillRequirement skillRequirement)
                     requirementsToRemove.Add(requirement);
@@ -597,17 +594,17 @@ namespace HideoutAutomation.MonoBehaviours
             }
         }
 
-        private HIPContributionCandidate? hideoutInProgressCreateContributionCandidate(HideoutClass hideout, AreaData data, EAreaType areaType, List<Requirement> requirements)
+        private HIPContributionCandidate? hideoutInProgressCreateContributionCandidate(HideoutRepresentation hideout, AreaData data, EAreaType areaType, List<Requirement> requirements)
         {
             if (Globals.Debug)
                 LogHelper.LogInfo($"(HIP): CheckItemRequirements.");
 
             List<string> itemIds = [];
             List<string> contributionMessages = [];
-            ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not MoneyItemClass).ToArray();
+            ItemRequirement[] itemRequirements = requirements.OfType<ItemRequirement>().Where(r => r.Item is not Money).ToArray();
             foreach (ItemRequirement itemRequirement in itemRequirements)
             {
-                var contributions = hideout.method_21([itemRequirement]);
+                var contributions = hideout.GetItemReferences([itemRequirement]);
                 if (contributions.Count > 0)
                 {
                     if (Globals.Debug)
